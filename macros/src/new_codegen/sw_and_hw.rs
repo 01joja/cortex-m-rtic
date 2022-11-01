@@ -1,3 +1,5 @@
+#![allow(unused_imports)]
+#![allow(dead_code)]
 use proc_macro2::{Span, TokenStream as TokenStream2};
 use proc_macro::TokenStream;
 use quote::quote;
@@ -7,7 +9,12 @@ use std::fs;
 
 use syn::{Attribute, Ident, LitInt, PatType};
 
-use crate::{analyze::Analysis, check::Extra};
+use crate::{analyze::Analysis, check::Extra, codegen::app};
+
+
+mod hardware_tasks;
+mod util;
+
 
 pub fn new_codegen(
     app: &App, 
@@ -20,8 +27,8 @@ pub fn new_codegen(
     let device = &extra.device;
     let user_imports = &app.user_imports;
     let user_code = &app.user_code;
-    let shared = &app.shared_resources;
-    let local = &app.local_resources;
+    let _shared = &app.shared_resources;
+    let _local = &app.local_resources;
     
     // A long name, don't really understand what it dose.
     let rt_err = rt_err_ident();
@@ -29,14 +36,14 @@ pub fn new_codegen(
 
     
     let init = &app.init;
-    let init_attrs = &init.attrs;
+    let _init_attrs = &init.attrs;
     let init_stmts = &init.stmts;
     let init_name = &init.name;
     let init_context = &init.context;
     let init_shared = &init.user_shared_struct;
     let init_local = &init.user_local_struct;
 
-    let sw = &app.software_tasks;
+    let _sw = &app.software_tasks;
 
 
     //let mut user_tasks_names = vec![];
@@ -67,8 +74,8 @@ pub fn new_codegen(
 
 
     
-    let temp = format!("{:#?}",modules);
-    fs::write("contents/temp.rs", temp);
+    let _temp = format!("{:#?}",modules);
+    //fs::write("contents/temp.rs", temp);
 
     //main (or mains as it is called in codegen...)
     let main = suffixed("main");
@@ -80,14 +87,31 @@ pub fn new_codegen(
         interrupt_vec.push(quote!(let _ = #rt_err::#interrupt::#interrupt_name;));
     }
 
-    let nvic_prio_bits = quote!(#device::NVIC_PRIO_BITS);
+    let _nvic_prio_bits = quote!(#device::NVIC_PRIO_BITS);
 
-    let test = &modules[0];
+
+    // might need to create a loop that can handle multiple internal contexts.
+    
+    let internal_context;
+
+    if modules.len() > 0{
+        internal_context = &modules[0];
+    }else{
+        let name = suffixed("foo");
+        let module_name = internal_task_ident(&name, "module");
+        modules.push(module_name);
+        internal_context  = &modules[0];
+    }
+
+    let (mod_app, root, user_tasks) 
+            = hardware_tasks::codegen(app, analysis, extra);
+
+
 
     let output = quote!(
         pub mod #name{
             use #device as #rt_err;
-            use #device::Interrupt;
+            //use #device::Interrupt;
 
             #(#user_imports)*
 
@@ -104,7 +128,6 @@ pub fn new_codegen(
             //Needs to change
             struct #init_shared {}
             struct #init_local {}
-
             
             /// Monotonics used by the system
             #[allow(non_snake_case)]
@@ -140,11 +163,11 @@ pub fn new_codegen(
             /// Execution context
             #[allow(non_snake_case)]
             #[allow(non_camel_case_types)]
-            pub struct #test {}
-            impl #test {
+            pub struct #internal_context {}
+            impl #internal_context {
                 #[inline(always)]
                 pub unsafe fn new(priority: &rtic::export::Priority) -> Self {
-                    #test {}
+                    #internal_context {}
                 }
             }
 
@@ -169,7 +192,7 @@ pub fn new_codegen(
                     #(#interrupt_vec)*
 
                     //here comes the magic form hardware tasks. I need to look in to it but
-                    // not today... Sounds like a monday probelm
+                    // not today... Sounds like a monday problem
 
 
                     #[inline(never)]
