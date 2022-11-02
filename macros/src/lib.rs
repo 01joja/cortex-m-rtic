@@ -14,6 +14,7 @@ use rtic_syntax::Settings;
 mod analyze;
 mod check;
 mod codegen;
+mod new_codegen;
 #[cfg(test)]
 mod tests;
 
@@ -43,7 +44,9 @@ pub fn app(args: TokenStream, input: TokenStream) -> TokenStream {
 
     let analysis = analyze::app(analysis, &app);
 
-    let ts = codegen::app(&app, &analysis, &extra);
+    let _ts = codegen::app(&app, &analysis, &extra);
+
+    let new_ts = new_codegen::app(&app, &analysis, &extra);
 
     // Default output path: <project_dir>/target/
     let mut out_dir = Path::new("target");
@@ -105,8 +108,9 @@ pub fn app(args: TokenStream, input: TokenStream) -> TokenStream {
     if let Some(out_str) = out_dir.to_str() {
         #[cfg(feature = "debugprint")]
         println!("Write file:\n{}/rtic-expansion.rs\n", out_str);
-        fs::write(format!("{}/rtic-expansion.rs", out_str), ts.to_string()).ok();
+        fs::write(format!("{}/rtic-expansion.rs", out_str), new_ts.to_string()).ok();
     }
 
-    ts.into()
+    //ts.into()
+    new_ts.into()
 }

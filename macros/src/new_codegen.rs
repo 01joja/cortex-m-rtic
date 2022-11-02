@@ -7,7 +7,7 @@ use rtic_syntax::ast::App;
 use std::fs;
 
 mod print_app;
-mod sw_and_hw;
+mod hardware;
 
 //use syn::{Attribute, Ident, LitInt, PatType};
 
@@ -25,7 +25,7 @@ pub fn app(
         Err(error) => println!("Problem opening the file: {:?}", error),
     };
 
-    let output = sw_and_hw::new_codegen(&app,&analysis,&extra);
+    let output = hardware::new_codegen(&app,&analysis,&extra);
     
 
     // saves/prints information about extra

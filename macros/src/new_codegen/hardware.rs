@@ -14,6 +14,9 @@ use crate::{analyze::Analysis, check::Extra, codegen::app};
 
 mod hardware_tasks;
 mod util;
+mod module;
+mod local_resources_struct;
+mod shared_resources_struct;
 
 
 pub fn new_codegen(

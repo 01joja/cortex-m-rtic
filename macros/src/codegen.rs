@@ -2,9 +2,6 @@ use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use rtic_syntax::ast::App;
 
-use std::fs::File;
-use std::io::prelude::*;
-
 use crate::{analyze::Analysis, check::Extra};
 
 mod assertions;
