@@ -6,4 +6,3 @@
 Cargo.lock
 *.hex
 /contents
-test.rs
