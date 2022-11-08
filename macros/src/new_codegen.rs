@@ -25,6 +25,8 @@ pub fn app(
         Err(error) => println!("Problem opening the file: {:?}", error),
     };
 
+    
+
     let output = hardware::new_codegen(&app,&analysis,&extra);
     
 

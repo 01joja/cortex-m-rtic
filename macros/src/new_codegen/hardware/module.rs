@@ -17,16 +17,20 @@ use rtic_syntax::{ast::App, Context};
 
 #[allow(clippy::too_many_lines)]
 pub fn codegen_original(
+    _idle: bool,
+    init: bool,
+    hw: bool,
     ctxt: Context,
-    shared_resources_tick: bool,
-    local_resources_tick: bool,
-    app: &App,
+    shared_resources_tick:bool,
+    local_resources_tick:bool,
+    app: &App, 
     analysis: &Analysis,
     extra: &Extra,
 ) -> TokenStream2 {
-    //items - 
+
+    //items - outside of the module.
     let mut items = vec![];
-    //module_items - don't understand.
+    //module_items - Things that are put in the function module
     let mut module_items = vec![];
     //fields - builds the execution context struct.
     let mut fields = vec![];
@@ -40,7 +44,9 @@ pub fn codegen_original(
     let mut lt = None;
     match ctxt {
         Context::Init => {
-            println!("Module 001");
+            if !init{
+                println!("Module 001");
+            }
             fields.push(quote!(
                 /// Core (Cortex-M) peripherals
                 pub core: rtic::export::Peripherals
@@ -68,7 +74,11 @@ pub fn codegen_original(
             values.push(quote!(core));
         }
         Context::Idle => {println!("Module 002");}
-        Context::HardwareTask(_) => {println!("Module 003");} 
+        Context::HardwareTask(_) => {
+            if !hw{
+                println!("Module 003");
+            }
+        } 
         Context::SoftwareTask(_) => {println!("Module 004");}
     }
 
@@ -124,7 +134,9 @@ pub fn codegen_original(
     }
 
     if let Context::Init = ctxt {
-        println!("Module 007");
+        if !init{
+            println!("Module 007");
+        }
         let monotonic_types: Vec<_> = app
             .monotonics
             .iter()
@@ -152,15 +164,25 @@ pub fn codegen_original(
 
     let doc = match ctxt {
         Context::Idle => {println!("Module 008"); "Idle loop"},
-        Context::Init => {println!("Module 009"); "Initialization function"},
-        Context::HardwareTask(_) => {println!("Module 010"); "Hardware task"},
+        Context::Init => {
+            if !init{
+                println!("Module 009"); 
+            }
+            "Initialization function"},
+        Context::HardwareTask(_) => {
+            if !hw{
+                println!("Module 010"); 
+            }
+            "Hardware task"},
         Context::SoftwareTask(_) => {println!("Module 011"); "Software task"},
     };
 
-    let v = Vec::new();
+    let vector = Vec::new(); // only needed with software tasks.
     let cfgs = match ctxt {
         Context::HardwareTask(t) => {
-            println!("Module 012"); 
+            if !hw{
+                println!("Module 012");
+            } 
             &app.hardware_tasks[t].cfgs
             // ...
         }
@@ -169,27 +191,37 @@ pub fn codegen_original(
             &app.software_tasks[t].cfgs
             // ...
         }
-        _ => &v,
+        _ => &vector,
     };
 
     let core = if ctxt.is_init() {
-        println!("Module 014"); 
+        if !init{
+            println!("Module 014"); 
+        }
         Some(quote!(core: rtic::export::Peripherals,))
     } else {
-        println!("Module 015"); 
+        if !hw{
+            println!("Module 015"); 
+        }
         None
     };
 
     let priority = if ctxt.is_init() {
-        println!("Module 016"); 
+        if !init{
+            println!("Module 016"); 
+        }
         None
     } else {
-        println!("Module 017"); 
+        if !hw{
+            println!("Module 017"); 
+        }
         Some(quote!(priority: &#lt rtic::export::Priority))
     };
 
     {
-        println!("Module 018");
+        if !(hw || init){
+            println!("Module 018");
+        }
         let internal_context_name = util::internal_task_ident(name, "Context");
 
         items.push(quote!(
@@ -459,11 +491,13 @@ pub fn codegen_original(
     }
 
     if items.is_empty() {
-        println!("Module 020"); 
-        quote!()
+        println!("Module 020");
+        return quote!()
     } else {
-        println!("Module 021"); 
-        quote!(
+        if !(hw || init){
+            println!("Module 021"); 
+        }
+        return quote!(
             #(#items)*
 
             #[allow(non_snake_case)]
