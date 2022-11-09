@@ -5,7 +5,7 @@ use rtic_syntax::{
     Context,
 };
 
-use crate::codegen::util;
+use super::util;
 
 /// Generates local resources structs
 pub fn codegen_original(ctxt: Context, needs_lt: &mut bool, app: &App) -> (TokenStream2, TokenStream2) {

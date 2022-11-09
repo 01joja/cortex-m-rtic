@@ -1,3 +1,6 @@
+#![allow(unused_imports)]
+#![allow(dead_code)]
+
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use rtic_syntax::ast::App;
@@ -18,7 +21,7 @@ mod shared_resources;
 mod shared_resources_struct;
 mod software_tasks;
 mod timer_queue;
-mod util;
+pub mod util;
 
 #[allow(clippy::too_many_lines)]
 pub fn app(app: &App, analysis: &Analysis, extra: &Extra) -> TokenStream2 {
@@ -156,10 +159,6 @@ pub fn app(app: &App, analysis: &Analysis, extra: &Extra) -> TokenStream2 {
         )
     };
     let rt_err = util::rt_err_ident();
-
-    println!("{:?}",user_software_tasks);
-    //println!("{:?}",root_software_tasks);
-    //println!("{:?}",mod_app_software_tasks);
     
 
 

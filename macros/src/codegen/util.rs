@@ -1,3 +1,6 @@
+#![allow(unused_imports)]
+#![allow(dead_code)]
+
 use core::sync::atomic::{AtomicUsize, Ordering};
 
 use proc_macro2::{Span, TokenStream as TokenStream2};

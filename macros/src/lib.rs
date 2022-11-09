@@ -18,6 +18,11 @@ mod new_codegen;
 #[cfg(test)]
 mod tests;
 
+//cargo +nightly rustc -- -Z macro-backtrace expand --example basic_hardware > contents/expand.rs 
+//cargo +nightly rustc -- -Z macro-backtrace run --example basic_hardware 
+//cargo run --example basic_hardware  +nightly rustc -- -Z macro-backtrace  
+//cargo run --example basic_hardware rustc -- -Z macro-backtrace  
+
 /// Attribute used to declare a RTIC application
 ///
 /// For user documentation see the [RTIC book](https://rtic.rs)
@@ -27,6 +32,8 @@ mod tests;
 /// Should never panic, cargo feeds a path which is later converted to a string
 #[proc_macro_attribute]
 pub fn app(args: TokenStream, input: TokenStream) -> TokenStream {
+    // Just so that I can print stuff without problems.
+    println!("/*");
     let mut settings = Settings::default();
     settings.optimize_priorities = false;
     settings.parse_binds = true;
@@ -44,7 +51,7 @@ pub fn app(args: TokenStream, input: TokenStream) -> TokenStream {
 
     let analysis = analyze::app(analysis, &app);
 
-    let _ts = codegen::app(&app, &analysis, &extra);
+    //let ts = codegen::app(&app, &analysis, &extra);
 
     let new_ts = new_codegen::app(&app, &analysis, &extra);
 
@@ -111,6 +118,8 @@ pub fn app(args: TokenStream, input: TokenStream) -> TokenStream {
         fs::write(format!("{}/rtic-expansion.rs", out_str), new_ts.to_string()).ok();
     }
 
+    // Just so that I can print stuff without problems.
+    println!("*/");
     //ts.into()
     new_ts.into()
 }

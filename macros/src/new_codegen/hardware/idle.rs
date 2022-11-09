@@ -2,7 +2,7 @@ use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use rtic_syntax::{ast::App, Context};
 
-use crate::{
+use crate::new_codegen::{
     analyze::Analysis,
     check::Extra,
 };

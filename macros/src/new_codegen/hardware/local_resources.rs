@@ -2,8 +2,7 @@ use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use rtic_syntax::ast::App;
 
-use crate::{analyze::Analysis, check::Extra};
-use super::util;
+use crate::{analyze::Analysis, check::Extra, codegen::util};
 
 /// Generates `local` variables and local resource proxies
 ///

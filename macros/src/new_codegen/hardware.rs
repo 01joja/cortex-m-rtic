@@ -1,16 +1,14 @@
-#![allow(unused_imports)]
-#![allow(dead_code)]
-use proc_macro2::{Span, TokenStream as TokenStream2};
-use proc_macro::TokenStream;
+
+use proc_macro2::TokenStream as TokenStream2;
+// use proc_macro::TokenStream;
 use quote::quote;
 use rtic_syntax::ast::App;
-use std::fs;
+// use std::fs;
 
 
-use syn::{Attribute, Ident, LitInt, PatType};
+// use syn::{Attribute, Ident, LitInt, PatType};
 
-use crate::{analyze::Analysis, check::Extra, codegen::app};
-
+use crate::{analyze::Analysis, check::Extra, codegen::util};
 
 mod assertions;
 mod hardware_tasks;
@@ -21,17 +19,13 @@ mod local_resources;
 mod module;
 mod shared_resources_struct;
 mod shared_resources;
-mod util;
 
-pub fn new_codegen(
+pub fn codegen(
     app: &App, 
     analysis: &Analysis,
     extra: &Extra,
 ) -> TokenStream2 {
-    let mut mod_app = vec![];
     let mut main = vec![];
-    let mut root = vec![];
-    let mut user = vec![];
 
     let user_imports = &app.user_imports;
     let user_code = &app.user_code;
@@ -64,24 +58,6 @@ pub fn new_codegen(
     let (mod_app_local_resources, mod_local_resources) =
         local_resources::codegen(app, analysis, extra);
 
-    user.push(quote!(
-        #user_init
-
-        #user_idle
-    ));
-
-    root.push(quote!(
-        #(#root_init)*
-
-        #(#root_idle)*
-    ));
-
-    mod_app.push(quote!(
-        #mod_app_init
-
-        #(#mod_app_idle)*
-    ));
-
     let main_name = util::suffixed("main");
     main.push(quote!(
         #[doc(hidden)]
@@ -112,7 +88,9 @@ pub fn new_codegen(
             #(#user_code)*
             /// User code end
 
-            #(#user)*
+            #user_init
+
+            #user_idle
             
             
             ///
@@ -127,7 +105,9 @@ pub fn new_codegen(
             ///
             
 
-            #(#root)*
+            #(#root_init)*
+
+            #(#root_idle)*
 
             #mod_shared_resources
 
@@ -136,7 +116,9 @@ pub fn new_codegen(
             #(#root_hardware_tasks)*
 
             /// app module
-            #(#mod_app)*
+            #mod_app_init
+
+            #(#mod_app_idle)*
 
             #(#mod_app_shared_resources)*
 

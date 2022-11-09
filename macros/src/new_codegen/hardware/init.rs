@@ -4,7 +4,7 @@ use rtic_syntax::{ast::{App, HardwareTask}, Context};
 
 use syn::{Attribute, Ident, LitInt, PatType};
 
-use crate::{
+use crate::new_codegen::{
     analyze::Analysis,
     check::Extra,
 };
@@ -12,7 +12,9 @@ use crate::{
 mod post_init;
 mod pre_init;
 
-use super::{module,local_resources_struct,shared_resources_struct,util};
+use super::{module,local_resources_struct,shared_resources_struct};
+
+use crate::codegen::util;
 
 /// Generate support code for hardware tasks (`#[exception]`s and `#[interrupt]`s)
 pub fn codegen(

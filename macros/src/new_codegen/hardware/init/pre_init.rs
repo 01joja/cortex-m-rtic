@@ -2,9 +2,8 @@ use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use rtic_syntax::ast::App;
 
-use crate::{analyze::Analysis, check::Extra};
+use crate::{analyze::Analysis, check::Extra, codegen::util};
 
-use super::super::util;
 
 /// Generates code that runs before `#[init]`
 pub fn codegen_original(

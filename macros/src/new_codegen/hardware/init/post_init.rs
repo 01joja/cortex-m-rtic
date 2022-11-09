@@ -3,9 +3,8 @@ use quote::quote;
 use rtic_syntax::ast::App;
 use syn::Index;
 
-use crate::{analyze::Analysis};
+use crate::{analyze::Analysis, codegen::util};
 
-use super::super::util;
 
 /// Generates code that runs after `#[init]` returns
 pub fn codegen_original(
