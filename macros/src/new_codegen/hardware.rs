@@ -82,50 +82,52 @@ pub fn codegen(
 
             // #monotonics Not needed yet
 
+            /// #user_imports
             #(#user_imports)*
 
-            /// User code from within the module
+            /// #user_code 
             #(#user_code)*
-            /// User code end
 
+            /// #user_init
             #user_init
 
+            /// #user_idle
             #user_idle
             
-            
-            ///
-            ///#user_hardware_tasks
-            /// ||||
-            /// \/\/ 
+            /// #user_hardware_tasks
             #(#user_hardware_tasks)*
             
-            /// /\/\ 
-            /// ||||
-            /// #user_hardware_tasks
-            ///
-            
-
+            /// #root_init
             #(#root_init)*
 
+            /// #root_idle
             #(#root_idle)*
 
+            /// #mod_shared_resources
             #mod_shared_resources
 
+            /// #mod_local_resources
             #mod_local_resources
 
+            /// #root_hardware_tasks
             #(#root_hardware_tasks)*
 
-            /// app module
+            /// #mod_app_init
             #mod_app_init
 
+            /// #mod_app_idle
             #(#mod_app_idle)*
 
+            /// #mod_app_shared_resources
             #(#mod_app_shared_resources)*
 
+            /// #mod_app_local_resources
             #(#mod_app_local_resources)*
 
+            /// #mod_app_hardware_tasks
             #(#mod_app_hardware_tasks)*
 
+            /// #main
             #(#main)*
         }
     );

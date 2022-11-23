@@ -17,14 +17,12 @@ pub mod app {
     /// Always include the device crate which contains the vector table
     use lm3s6965 as you_must_enable_the_rt_feature_for_the_pac_in_your_cargo_toml;
     use cortex_m_semihosting::{debug, hprintln};
-    use lm3s6965::Interrupt;
     /// User code from within the module
     /// User code end
     #[inline(always)]
     #[allow(non_snake_case)]
     fn init(_: init::Context) -> (Shared, Local, init::Monotonics) {
-        //foo::spawn().unwrap();
-        rtic::pend(Interrupt::UART0);
+        foo::spawn().unwrap();
         ::cortex_m_semihosting::export::hstdout_str("init\n").unwrap();
         (Shared {}, Local {}, init::Monotonics())
     }
@@ -85,37 +83,37 @@ pub mod app {
 
     // Det här är nog för att kunna "spawna" 
     /// Spawns the task directly
-    // pub fn __rtic_internal_foo_spawn() -> Result<(), ()> {
-    //     let input = ();
-    //     unsafe {
-    //         if let Some(index)
-    //             = rtic::export::interrupt::free(|_| {
-    //                 (&mut *__rtic_internal_foo_FQ.get_mut()).dequeue()
-    //             }) {
-    //             (&mut *__rtic_internal_foo_INPUTS.get_mut())
-    //                 .get_unchecked_mut(usize::from(index))
-    //                 .as_mut_ptr()
-    //                 .write(input);
-    //             rtic::export::interrupt::free(|_| {
-    //                 (&mut *__rtic_internal_P1_RQ.get_mut())
-    //                     .enqueue_unchecked((P1_T::foo, index));
-    //             });
-    //             rtic::pend(lm3s6965::interrupt::UART0);
-    //             Ok(())
-    //         } else {
-    //             Err(input)
-    //         }
-    //     }
-    // }
+    pub fn __rtic_internal_foo_spawn() -> Result<(), ()> {
+        let input = ();
+        unsafe {
+            if let Some(index)
+                = rtic::export::interrupt::free(|_| {
+                    (&mut *__rtic_internal_foo_FQ.get_mut()).dequeue()
+                }) {
+                (&mut *__rtic_internal_foo_INPUTS.get_mut())
+                    .get_unchecked_mut(usize::from(index))
+                    .as_mut_ptr()
+                    .write(input);
+                rtic::export::interrupt::free(|_| {
+                    (&mut *__rtic_internal_P1_RQ.get_mut())
+                        .enqueue_unchecked((P1_T::foo, index));
+                });
+                rtic::pend(lm3s6965::interrupt::SSI0);
+                Ok(())
+            } else {
+                Err(input)
+            }
+        }
+    }
     #[allow(non_snake_case)]
     ///Software task
     pub mod foo {
         pub use super::__rtic_internal_foo_Context as Context;
-        // pub use super::__rtic_internal_foo_spawn as spawn;
+        pub use super::__rtic_internal_foo_spawn as spawn;
         // Omvandlar ovan funktion till spawn för foo.
     }
 
-    //same as in hardware  (except for UART0)
+    //same as in hardware  (except for SSI0)
     // ||||
     // \/\/
 
@@ -123,12 +121,12 @@ pub mod app {
     #[doc(hidden)]
     #[allow(non_upper_case_globals)]
     const __rtic_internal_MASK_CHUNKS: usize = rtic::export::compute_mask_chunks([
-        lm3s6965::Interrupt::UART0 as u32,
+        lm3s6965::Interrupt::SSI0 as u32,
     ]);
     #[doc(hidden)]
     #[allow(non_upper_case_globals)]
     const __rtic_internal_MASKS: [rtic::export::Mask<__rtic_internal_MASK_CHUNKS>; 3] = [
-        rtic::export::create_mask([lm3s6965::Interrupt::UART0 as u32]),
+        rtic::export::create_mask([lm3s6965::Interrupt::SSI0 as u32]),
         rtic::export::create_mask([]),
         rtic::export::create_mask([]),
     ];
@@ -136,7 +134,7 @@ pub mod app {
     
     // /\/\
     // ||||
-    //same as in software
+    //same as in hardware
 
     #[allow(non_camel_case_types)]
     #[allow(non_upper_case_globals)]
@@ -151,64 +149,59 @@ pub mod app {
     static __rtic_internal_foo_INPUTS: rtic::RacyCell<[core::mem::MaybeUninit<()>; 1]> = rtic::RacyCell::new([
         core::mem::MaybeUninit::uninit(),
     ]);
-    // #[allow(non_snake_case)]
-    // #[allow(non_camel_case_types)]
-    // #[doc(hidden)]
-    // pub enum P1_T {
-    //     foo,
-    // }
-    // #[automatically_derived]
-    // #[allow(non_snake_case)]
-    // #[allow(non_camel_case_types)]
-    // impl ::core::clone::Clone for P1_T {
-    //     #[inline]
-    //     fn clone(&self) -> P1_T {
-    //         *self
-    //     }
-    // }
-    // #[automatically_derived]
-    // #[allow(non_snake_case)]
-    // #[allow(non_camel_case_types)]
-    // impl ::core::marker::Copy for P1_T {}
-    // #[doc(hidden)]
-    // #[allow(non_camel_case_types)]
-    // #[allow(non_upper_case_globals)]
-    // static __rtic_internal_P1_RQ: rtic::RacyCell<rtic::export::SCRQ<P1_T, 2>> = rtic::RacyCell::new(
-    //     rtic::export::Queue::new(),
-    // );
+    #[allow(non_snake_case)]
+    #[allow(non_camel_case_types)]
+    #[doc(hidden)]
+    pub enum P1_T {
+        foo,
+    }
+    #[automatically_derived]
+    #[allow(non_snake_case)]
+    #[allow(non_camel_case_types)]
+    impl ::core::clone::Clone for P1_T {
+        #[inline]
+        fn clone(&self) -> P1_T {
+            *self
+        }
+    }
+    #[automatically_derived]
+    #[allow(non_snake_case)]
+    #[allow(non_camel_case_types)]
+    impl ::core::marker::Copy for P1_T {}
+    #[doc(hidden)]
+    #[allow(non_camel_case_types)]
+    #[allow(non_upper_case_globals)]
+    static __rtic_internal_P1_RQ: rtic::RacyCell<rtic::export::SCRQ<P1_T, 2>> = rtic::RacyCell::new(
+        rtic::export::Queue::new(),
+    );
     #[allow(non_snake_case)]
     ///Interrupt handler to dispatch tasks at priority 1
     #[no_mangle]
-    unsafe fn UART0() {
-        // är det här dispatchern?
+    unsafe fn SSI0() {
         /// The priority of this interrupt handler
         const PRIORITY: u8 = 1u8;
-        // rtic::export::run(
-        //     PRIORITY,
-        //     || {
-        //         while let Some((task, index))
-        //             = (&mut *__rtic_internal_P1_RQ.get_mut()).split().1.dequeue()
-        //         {
-        //             match task {
-        //                 P1_T::foo => {
-        //                     let () = (&*__rtic_internal_foo_INPUTS.get())
-        //                         .get_unchecked(usize::from(index))
-        //                         .as_ptr()
-        //                         .read();
-        //                     (&mut *__rtic_internal_foo_FQ.get_mut())
-        //                         .split()
-        //                         .0
-        //                         .enqueue_unchecked(index);
-        //                     let priority = &rtic::export::Priority::new(PRIORITY);
-        //                     foo(foo::Context::new(priority))
-        //                 }
-        //             }
-        //         }
-        //     },
-        // );
         rtic::export::run(
             PRIORITY,
-            || { foo(foo::Context::new(&rtic::export::Priority::new(PRIORITY))) },
+            || {
+                while let Some((task, index))
+                    = (&mut *__rtic_internal_P1_RQ.get_mut()).split().1.dequeue()
+                {
+                    match task {
+                        P1_T::foo => {
+                            let () = (&*__rtic_internal_foo_INPUTS.get())
+                                .get_unchecked(usize::from(index))
+                                .as_ptr()
+                                .read();
+                            (&mut *__rtic_internal_foo_FQ.get_mut())
+                                .split()
+                                .0
+                                .enqueue_unchecked(index);
+                            let priority = &rtic::export::Priority::new(PRIORITY);
+                            foo(foo::Context::new(priority))
+                        }
+                    }
+                }
+            },
         );
     }
     #[doc(hidden)]
@@ -220,35 +213,16 @@ pub mod app {
             // Not in hardware
             // ||||
             // \/\/
-            // const _CONST_CHECK: () = { if !rtic::export::have_basepri() {} else {} };
-            // let _ = _CONST_CHECK;
-            // rtic::export::interrupt::disable();
-            // (0..1u8)
-            //     .for_each(|i| {
-            //         (&mut *__rtic_internal_foo_FQ.get_mut()).enqueue_unchecked(i)
-            //     });
-            // let mut core: rtic::export::Peripherals = rtic::export::Peripherals::steal()
-            //     .into();
-            // let _ = you_must_enable_the_rt_feature_for_the_pac_in_your_cargo_toml::interrupt::UART0;
-            const _CONST_CHECK: () = {
-                if !rtic::export::have_basepri() {
-                    if (lm3s6965::Interrupt::UART0 as usize)
-                        >= (__rtic_internal_MASK_CHUNKS * 32)
-                    {
-                        ::core::panicking::panic_fmt(
-                            ::core::fmt::Arguments::new_v1(
-                                &[
-                                    "An interrupt out of range is used while in armv6 or armv8m.base",
-                                ],
-                                &[],
-                            ),
-                        );
-                    }
-                } else {}
-            };
+            const _CONST_CHECK: () = { if !rtic::export::have_basepri() {} else {} };
             let _ = _CONST_CHECK;
             rtic::export::interrupt::disable();
-            let mut core: rtic::export::Peripherals = rtic::export::Peripherals::steal().into();
+            (0..1u8)
+                .for_each(|i| {
+                    (&mut *__rtic_internal_foo_FQ.get_mut()).enqueue_unchecked(i)
+                });
+            let mut core: rtic::export::Peripherals = rtic::export::Peripherals::steal()
+                .into();
+            let _ = you_must_enable_the_rt_feature_for_the_pac_in_your_cargo_toml::interrupt::SSI0;
             // /\/\
             // ||||
             // Not in hardware
@@ -258,7 +232,7 @@ pub mod app {
                 ::core::panicking::panic_fmt(
                     ::core::fmt::Arguments::new_v1(
                         &[
-                            "Maximum priority used by interrupt vector \'UART0\' is more than supported by hardware",
+                            "Maximum priority used by interrupt vector \'SSI0\' is more than supported by hardware",
                         ],
                         &[],
                     ),
@@ -266,11 +240,11 @@ pub mod app {
             };
             core.NVIC
                 .set_priority(
-                    you_must_enable_the_rt_feature_for_the_pac_in_your_cargo_toml::interrupt::UART0, //uses UART0
+                    you_must_enable_the_rt_feature_for_the_pac_in_your_cargo_toml::interrupt::SSI0, //uses SSI0
                     rtic::export::logical2hw(1u8, lm3s6965::NVIC_PRIO_BITS),
                 );
             rtic::export::NVIC::unmask(
-                you_must_enable_the_rt_feature_for_the_pac_in_your_cargo_toml::interrupt::UART0, //uses UART0
+                you_must_enable_the_rt_feature_for_the_pac_in_your_cargo_toml::interrupt::SSI0, //uses SSI0
             );
             #[inline(never)]
             fn __rtic_init_resources<F>(f: F)

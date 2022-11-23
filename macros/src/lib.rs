@@ -18,10 +18,6 @@ mod new_codegen;
 #[cfg(test)]
 mod tests;
 
-//cargo +nightly rustc -- -Z macro-backtrace expand --example basic_hardware > contents/expand.rs 
-//cargo +nightly rustc -- -Z macro-backtrace run --example basic_hardware 
-//cargo run --example basic_hardware  +nightly rustc -- -Z macro-backtrace  
-//cargo run --example basic_hardware rustc -- -Z macro-backtrace  
 
 /// Attribute used to declare a RTIC application
 ///
@@ -32,8 +28,9 @@ mod tests;
 /// Should never panic, cargo feeds a path which is later converted to a string
 #[proc_macro_attribute]
 pub fn app(args: TokenStream, input: TokenStream) -> TokenStream {
-    // Just so that I can print stuff without problems.
-    println!("/*");
+
+    let new = true;
+
     let mut settings = Settings::default();
     settings.optimize_priorities = false;
     settings.parse_binds = true;
@@ -51,10 +48,14 @@ pub fn app(args: TokenStream, input: TokenStream) -> TokenStream {
 
     let analysis = analyze::app(analysis, &app);
 
-    //let ts = codegen::app(&app, &analysis, &extra);
 
-    let new_ts = new_codegen::app(&app, &analysis, &extra);
+    let ts;
 
+    if new{
+        ts = new_codegen::app(&app, &analysis, &extra);
+    }else{ //"old"
+        ts = codegen::app(&app, &analysis, &extra);
+    }
     // Default output path: <project_dir>/target/
     let mut out_dir = Path::new("target");
 
@@ -66,7 +67,7 @@ pub fn app(args: TokenStream, input: TokenStream) -> TokenStream {
     let target_triple_prefix = "thumbv";
 
     // Check for special scenario where default target/ directory is not present
-    //
+    // cargo   expand --example basic_software_two_tasks > contents/expand.rs  --cfg 'new_codegen'
     // This is configurable in .cargo/config:
     //
     // [build]
@@ -115,11 +116,8 @@ pub fn app(args: TokenStream, input: TokenStream) -> TokenStream {
     if let Some(out_str) = out_dir.to_str() {
         #[cfg(feature = "debugprint")]
         println!("Write file:\n{}/rtic-expansion.rs\n", out_str);
-        fs::write(format!("{}/rtic-expansion.rs", out_str), new_ts.to_string()).ok();
+        fs::write(format!("{}/rtic-expansion.rs", out_str), ts.to_string()).ok();
     }
 
-    // Just so that I can print stuff without problems.
-    println!("*/");
-    //ts.into()
-    new_ts.into()
+    ts.into()
 }

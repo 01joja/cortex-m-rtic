@@ -168,78 +168,58 @@ pub fn app(app: &App, analysis: &Analysis, extra: &Extra) -> TokenStream2 {
             /// Always include the device crate which contains the vector table
             use #device as #rt_err;
 
+            /// #monotonics
             #monotonics
 
+            /// #user_imports
             #(#user_imports)*
 
-            /// User code from within the module
+            /// #user_code
             #(#user_code)*
-            /// User code end
 
+            /// #user
             #(#user)*
             
-            
-            ///
-            ///#user_hardware_tasks
-            /// ||||
-            /// \/\/ 
-            #(#user_hardware_tasks)*
-            
-            /// /\/\ 
-            /// ||||
             /// #user_hardware_tasks
-            ///
-            
-            ///
-            /// #user_software_tasks
-            /// ||||
-            /// \/\/ 
-            #(#user_software_tasks)*
-            /// /\/\ 
-            /// ||||
-            /// #user_software_tasks
-            ///
+            #(#user_hardware_tasks)*
 
+            /// #user_software_tasks
+            #(#user_software_tasks)*
+
+            /// #root
             #(#root)*
 
+            /// #mod_shared_resources
             #mod_shared_resources
 
+            /// #mod_local_resources
             #mod_local_resources
 
+            /// #root_hardware_tasks
             #(#root_hardware_tasks)*
 
-            ///
             /// #user_software_tasks
-            /// ||||
-            /// \/\/ 
             #(#root_software_tasks)*
-            /// /\/\ 
-            /// ||||
-            /// #user_software_tasks
-            ///
 
             /// app module
             #(#mod_app)*
 
+            /// #mod_app_shared_resources
             #(#mod_app_shared_resources)*
 
+            /// #mod_app_local_resources
             #(#mod_app_local_resources)*
 
+            /// #mod_app_hardware_tasks
             #(#mod_app_hardware_tasks)*
 
-
-            ///
             /// #user_software_tasks
-            /// ||||
-            /// \/\/ 
             #(#mod_app_software_tasks)*
-            /// /\/\ 
-            /// ||||
-            /// #user_software_tasks
-            ///
 
+            /// #mod_app_dispatchers
             #(#mod_app_dispatchers)*
 
+            /// #mod_app_timer_queue
             #(#mod_app_timer_queue)*
 
             #(#mains)*

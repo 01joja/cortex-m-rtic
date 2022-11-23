@@ -12,11 +12,11 @@ use super::hardware;
 
 use crate::codegen::util;
 
-
+mod dispatchers;
 
 pub fn codegen(
     app: &App, 
-    _analysis: &Analysis,
+    analysis: &Analysis,
     extra: &Extra,
 ) -> (
     // Returns the argument needed for rtic_syntax::parse()
@@ -33,49 +33,68 @@ pub fn codegen(
     let user_imports = &app.user_imports;
     let user_code = &app.user_code;
 
+    let (dispatchers, 
+        software_tasks, 
+        overhead_software_tasks,
+        init_software) = dispatchers::codegen(app, analysis, extra);
+
     let user_init = codegen_init(app);
+
+    // user_idle, hardware_tasks and resources are untouched.
     let user_idle = codegen_idle(app);
-       
+    let hardware_tasks = codegen_hardware(app);
+    let resources = codegen_resources(app);
+    
+    // creates the argument used in the rtic parser
     let argument = quote!(
         // This is equal to the rtic macro:
         // #[rtic::app(device = #device)]
         device = #device
     );
 
-    let hardware_task = codegen_hardware(app);
-
-    let resources = codegen_resources(app);
-    
     let code = quote!(
         mod #name{
 
-
+            /// #resources
             #resources
 
-
+            /// #user_imports
             #(#user_imports)*
 
+            /// #user_init
             #user_init
 
+            /// #init_software
+            #init_software
+
+            /// #user_idle
             #user_idle
 
+            /// #user_code
             #(#user_code)*
 
-            #(#hardware_task)*
+            /// #hardware_tasks
+            #(#hardware_tasks)*
+            
+            /// #dispatchers
+            #(#dispatchers)*
 
+            /// #software_tasks
+            #(#software_tasks)*
+
+            /// #overhead_software_tasks 
+            #(#overhead_software_tasks)*
         }
 
     );
-
-    println!("hej hej hej2{:?}", format!("{:?}", argument));
 
     (argument, code)
 }
 
 
 
+/// Adds a call to software_init() if there are any software tasks. 
 fn codegen_init(app:&App) -> TokenStream2{
-
     let init = &app.init;
     let name = &init.name;
     let context = &init.context;
@@ -92,15 +111,25 @@ fn codegen_init(app:&App) -> TokenStream2{
     // }
     // println!("{:?}",a_vector);
 
+    let init_software_call; 
+    if app.software_tasks.is_empty(){
+        init_software_call = quote!();
+    }else{
+        init_software_call = quote!(init_software(););
+    };
+
+
     quote!(
         #(#attrs)*
         #[init]
         fn #name(#context: #name::Context) -> (#user_init_return) {
+            #init_software_call
             #(#stmts)*
         }
     )
 }
 
+/// Recreates the idle task so they can be parsed again
 fn codegen_idle(app:&App) -> Option<TokenStream2>{
 
     if let Some(idle) = &app.idle{
@@ -122,9 +151,10 @@ fn codegen_idle(app:&App) -> Option<TokenStream2>{
     
 }
 
+/// Recreates the hardware tasks so they can be parsed again
 fn codegen_hardware(app: &App) -> Vec<TokenStream2>{
+    
     let mut hw_tasks = vec![];
-
     
     for (name, task) in &app.hardware_tasks{
 
@@ -134,9 +164,8 @@ fn codegen_hardware(app: &App) -> Vec<TokenStream2>{
         let stmts = &task.stmts;
 
         // Transforms suffix literal to unsuffixed literal
-        // and can there for be put as a priority value
-        let priority = format!("{:?}",&task.args.priority);
-        let priority = TokenStream2::from_str(priority.as_str()).unwrap();      
+        // and can there for be put as a priority value 
+        let priority = util::priority_literal(&task.args.priority);
 
         // let test = TokenStream::from_str(&format!("{:08b}", value)).unwrap();
         // println!("{:?}",format!("{:?}",test));
@@ -156,6 +185,7 @@ fn codegen_hardware(app: &App) -> Vec<TokenStream2>{
     hw_tasks
 }
 
+/// Recreates the resources so they can be parsed again
 fn codegen_resources(app: &App) -> TokenStream2 {
 
     let mut local = vec![];

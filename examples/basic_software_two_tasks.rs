@@ -7,7 +7,7 @@
 
 use panic_semihosting as _;
 
-#[rtic::app(device = lm3s6965, dispatchers = [SSI0])]
+#[rtic::app(device = lm3s6965, dispatchers = [UART0,UART1,UART2])]
 mod app {
     use cortex_m_semihosting::{debug, hprintln};
 
@@ -19,28 +19,25 @@ mod app {
 
     #[init]
     fn init(_: init::Context) -> (Shared, Local, init::Monotonics) {
+        bar::spawn().unwrap();
         foo::spawn().unwrap();
+        i_am_speed::spawn().unwrap();
+        number_two::spawn().unwrap();
         hprintln!("init").unwrap();
 
         (Shared {}, Local {}, init::Monotonics())
     }
 
-    #[idle]
-    fn idle(_: idle::Context) -> ! {
-        // interrupts are enabled again; the `UART0` handler runs at this point
-
-        hprintln!("idle").unwrap();
-        foo::spawn().unwrap();
-        hprintln!("end").unwrap();
-        debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator
-
-        loop {
-            cortex_m::asm::nop();
-        }
-    }
-
-    #[task]
+    #[task(priority = 1)]
     fn foo(_: foo::Context) {
         hprintln!("foo").unwrap();
+
+        debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator
     }
+
+    #[task(priority = 1)]
+    fn bar(_: bar::Context) {
+        hprintln!("bar").unwrap();
+    }
+
 }

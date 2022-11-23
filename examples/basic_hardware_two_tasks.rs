@@ -22,28 +22,26 @@ mod app {
     fn init(_: init::Context) -> (Shared, Local, init::Monotonics) {
         // Pends the UART0 interrupt but its handler won't run until *after*
         // `init` returns because interrupts are disabled
-        rtic::pend(Interrupt::UART0); // equivalent to NVIC::pend
+        rtic::pend(Interrupt::UART0);
+        rtic::pend(Interrupt::UART1); // equivalent to NVIC::pend
+
         hprintln!("init").unwrap();
 
         (Shared {}, Local {}, init::Monotonics())
     }
 
-    #[idle]
-    fn idle(_: idle::Context) -> ! {
-        // interrupts are enabled again; the `UART0` handler runs at this point
 
-        hprintln!("idle").unwrap();
-        rtic::pend(Interrupt::UART0);
-        hprintln!("end").unwrap();
+    #[task(binds = UART1, priority = 1)]
+    fn foo(_: foo::Context) {
+
+        hprintln!("foo").unwrap();
+
         debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator
-
-        loop {
-            cortex_m::asm::nop();
-        }
     }
 
-    #[task(binds = UART0)]
-    fn foo(_: foo::Context) {
-        hprintln!("foo").unwrap();
+    #[task(binds = UART0, priority = 1)]
+    fn bar(_: bar::Context) {
+
+        hprintln!("bar").unwrap();
     }
 }

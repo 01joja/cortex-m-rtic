@@ -25,7 +25,7 @@ mod app {
         (Shared {}, Local {}, init::Monotonics())
     }
 
-    #[task]
+    #[task(priority = 1)]
     fn foo(_: foo::Context) {
         hprintln!("foo").unwrap();
 

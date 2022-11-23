@@ -16,35 +16,41 @@ use panic_semihosting as _;
 pub mod app {
     /// Always include the device crate which contains the vector table
     use lm3s6965 as you_must_enable_the_rt_feature_for_the_pac_in_your_cargo_toml;
+    /// #monotonics
+    /// #user_imports
     use cortex_m_semihosting::{debug, hprintln};
-    use lm3s6965::Interrupt;
-    /// User code from within the module
-    /// User code end
+    /// #user_code
+    /// #user
     #[inline(always)]
     #[allow(non_snake_case)]
     fn init(_: init::Context) -> (Shared, Local, init::Monotonics) {
+        bar::spawn().unwrap();
         foo::spawn().unwrap();
         ::cortex_m_semihosting::export::hstdout_str("init\n").unwrap();
         (Shared {}, Local {}, init::Monotonics())
     }
-    #[allow(non_snake_case)]
-    fn idle(_: idle::Context) -> ! {
-        use rtic::Mutex as _;
-        use rtic::mutex::prelude::*;
-        ::cortex_m_semihosting::export::hstdout_str("idle\n").unwrap();
-        foo::spawn().unwrap();
-        ::cortex_m_semihosting::export::hstdout_str("end\n").unwrap();
-        debug::exit(debug::EXIT_SUCCESS);
-        loop {
-            cortex_m::asm::nop();
-        }
-    }
+    /// #user_hardware_tasks
+    /// #user_software_tasks
     #[allow(non_snake_case)]
     fn foo(_: foo::Context) {
         use rtic::Mutex as _;
         use rtic::mutex::prelude::*;
         ::cortex_m_semihosting::export::hstdout_str("foo\n").unwrap();
+        debug::exit(debug::EXIT_SUCCESS);
     }
+    #[allow(non_snake_case)]
+    fn bar(_: bar::Context) {
+        use rtic::Mutex as _;
+        use rtic::mutex::prelude::*;
+        ::cortex_m_semihosting::export::hstdout_str("bar\n").unwrap();
+    }
+    #[allow(non_snake_case)]
+    fn do_not_run(_: do_not_run::Context) {
+        use rtic::Mutex as _;
+        use rtic::mutex::prelude::*;
+        ::cortex_m_semihosting::export::hstdout_str("don\'t run\n").unwrap();
+    }
+    /// #root
     struct Shared {}
     struct Local {}
     /// Monotonics used by the system
@@ -78,21 +84,10 @@ pub mod app {
         pub use super::__rtic_internal_Monotonics as Monotonics;
         pub use super::__rtic_internal_init_Context as Context;
     }
-    /// Execution context
-    #[allow(non_snake_case)]
-    #[allow(non_camel_case_types)]
-    pub struct __rtic_internal_idle_Context {}
-    impl __rtic_internal_idle_Context {
-        #[inline(always)]
-        pub unsafe fn new(priority: &rtic::export::Priority) -> Self {
-            __rtic_internal_idle_Context {}
-        }
-    }
-    #[allow(non_snake_case)]
-    ///Idle loop
-    pub mod idle {
-        pub use super::__rtic_internal_idle_Context as Context;
-    }
+    /// #mod_shared_resources
+    /// #mod_local_resources
+    /// #root_hardware_tasks
+    /// #user_software_tasks
     /// Execution context
     #[allow(non_snake_case)]
     #[allow(non_camel_case_types)]
@@ -103,11 +98,6 @@ pub mod app {
             __rtic_internal_foo_Context {}
         }
     }
-
-    //Start of diff
-    // ||||
-    // \/\/
-
     /// Spawns the task directly
     pub fn __rtic_internal_foo_spawn() -> Result<(), ()> {
         let input = ();
@@ -137,7 +127,87 @@ pub mod app {
         pub use super::__rtic_internal_foo_Context as Context;
         pub use super::__rtic_internal_foo_spawn as spawn;
     }
+    /// Execution context
+    #[allow(non_snake_case)]
+    #[allow(non_camel_case_types)]
+    pub struct __rtic_internal_bar_Context {}
+    impl __rtic_internal_bar_Context {
+        #[inline(always)]
+        pub unsafe fn new(priority: &rtic::export::Priority) -> Self {
+            __rtic_internal_bar_Context {}
+        }
+    }
+    /// Spawns the task directly
+    pub fn __rtic_internal_bar_spawn() -> Result<(), ()> {
+        let input = ();
+        unsafe {
+            if let Some(index)
+                = rtic::export::interrupt::free(|_| {
+                    (&mut *__rtic_internal_bar_FQ.get_mut()).dequeue()
+                }) {
+                (&mut *__rtic_internal_bar_INPUTS.get_mut())
+                    .get_unchecked_mut(usize::from(index))
+                    .as_mut_ptr()
+                    .write(input);
+                rtic::export::interrupt::free(|_| {
+                    (&mut *__rtic_internal_P1_RQ.get_mut())
+                        .enqueue_unchecked((P1_T::bar, index));
+                });
+                rtic::pend(lm3s6965::interrupt::SSI0);
+                Ok(())
+            } else {
+                Err(input)
+            }
+        }
+    }
+    #[allow(non_snake_case)]
+    ///Software task
+    pub mod bar {
+        pub use super::__rtic_internal_bar_Context as Context;
+        pub use super::__rtic_internal_bar_spawn as spawn;
+    }
+    /// Execution context
+    #[allow(non_snake_case)]
+    #[allow(non_camel_case_types)]
+    pub struct __rtic_internal_do_not_run_Context {}
+    impl __rtic_internal_do_not_run_Context {
+        #[inline(always)]
+        pub unsafe fn new(priority: &rtic::export::Priority) -> Self {
+            __rtic_internal_do_not_run_Context {
+            }
+        }
+    }
+    /// Spawns the task directly
+    pub fn __rtic_internal_do_not_run_spawn() -> Result<(), ()> {
+        let input = ();
+        unsafe {
+            if let Some(index)
+                = rtic::export::interrupt::free(|_| {
+                    (&mut *__rtic_internal_do_not_run_FQ.get_mut()).dequeue()
+                }) {
+                (&mut *__rtic_internal_do_not_run_INPUTS.get_mut())
+                    .get_unchecked_mut(usize::from(index))
+                    .as_mut_ptr()
+                    .write(input);
+                rtic::export::interrupt::free(|_| {
+                    (&mut *__rtic_internal_P1_RQ.get_mut())
+                        .enqueue_unchecked((P1_T::do_not_run, index));
+                });
+                rtic::pend(lm3s6965::interrupt::SSI0);
+                Ok(())
+            } else {
+                Err(input)
+            }
+        }
+    }
+    #[allow(non_snake_case)]
+    ///Software task
+    pub mod do_not_run {
+        pub use super::__rtic_internal_do_not_run_Context as Context;
+        pub use super::__rtic_internal_do_not_run_spawn as spawn;
+    }
     /// app module
+    /// #mod_app_shared_resources
     #[doc(hidden)]
     #[allow(non_upper_case_globals)]
     const __rtic_internal_MASK_CHUNKS: usize = rtic::export::compute_mask_chunks([
@@ -150,6 +220,9 @@ pub mod app {
         rtic::export::create_mask([]),
         rtic::export::create_mask([]),
     ];
+    /// #mod_app_local_resources
+    /// #mod_app_hardware_tasks
+    /// #user_software_tasks
     #[allow(non_camel_case_types)]
     #[allow(non_upper_case_globals)]
     #[doc(hidden)]
@@ -163,10 +236,39 @@ pub mod app {
     static __rtic_internal_foo_INPUTS: rtic::RacyCell<[core::mem::MaybeUninit<()>; 1]> = rtic::RacyCell::new([
         core::mem::MaybeUninit::uninit(),
     ]);
+    #[allow(non_camel_case_types)]
+    #[allow(non_upper_case_globals)]
+    #[doc(hidden)]
+    static __rtic_internal_bar_FQ: rtic::RacyCell<rtic::export::SCFQ<2>> = rtic::RacyCell::new(
+        rtic::export::Queue::new(),
+    );
+    #[link_section = ".uninit.rtic1"]
+    #[allow(non_camel_case_types)]
+    #[allow(non_upper_case_globals)]
+    #[doc(hidden)]
+    static __rtic_internal_bar_INPUTS: rtic::RacyCell<[core::mem::MaybeUninit<()>; 1]> = rtic::RacyCell::new([
+        core::mem::MaybeUninit::uninit(),
+    ]);
+    #[allow(non_camel_case_types)]
+    #[allow(non_upper_case_globals)]
+    #[doc(hidden)]
+    static __rtic_internal_do_not_run_FQ: rtic::RacyCell<rtic::export::SCFQ<2>> = rtic::RacyCell::new(
+        rtic::export::Queue::new(),
+    );
+    #[link_section = ".uninit.rtic2"]
+    #[allow(non_camel_case_types)]
+    #[allow(non_upper_case_globals)]
+    #[doc(hidden)]
+    static __rtic_internal_do_not_run_INPUTS: rtic::RacyCell<
+        [core::mem::MaybeUninit<()>; 1],
+    > = rtic::RacyCell::new([core::mem::MaybeUninit::uninit()]);
+    /// #mod_app_dispatchers
     #[allow(non_snake_case)]
     #[allow(non_camel_case_types)]
     #[doc(hidden)]
     pub enum P1_T {
+        bar,
+        do_not_run,
         foo,
     }
     #[automatically_derived]
@@ -185,7 +287,7 @@ pub mod app {
     #[doc(hidden)]
     #[allow(non_camel_case_types)]
     #[allow(non_upper_case_globals)]
-    static __rtic_internal_P1_RQ: rtic::RacyCell<rtic::export::SCRQ<P1_T, 2>> = rtic::RacyCell::new(
+    static __rtic_internal_P1_RQ: rtic::RacyCell<rtic::export::SCRQ<P1_T, 4>> = rtic::RacyCell::new(
         rtic::export::Queue::new(),
     );
     #[allow(non_snake_case)]
@@ -201,6 +303,30 @@ pub mod app {
                     = (&mut *__rtic_internal_P1_RQ.get_mut()).split().1.dequeue()
                 {
                     match task {
+                        P1_T::bar => {
+                            let () = (&*__rtic_internal_bar_INPUTS.get())
+                                .get_unchecked(usize::from(index))
+                                .as_ptr()
+                                .read();
+                            (&mut *__rtic_internal_bar_FQ.get_mut())
+                                .split()
+                                .0
+                                .enqueue_unchecked(index);
+                            let priority = &rtic::export::Priority::new(PRIORITY);
+                            bar(bar::Context::new(priority))
+                        }
+                        P1_T::do_not_run => {
+                            let () = (&*__rtic_internal_do_not_run_INPUTS.get())
+                                .get_unchecked(usize::from(index))
+                                .as_ptr()
+                                .read();
+                            (&mut *__rtic_internal_do_not_run_FQ.get_mut())
+                                .split()
+                                .0
+                                .enqueue_unchecked(index);
+                            let priority = &rtic::export::Priority::new(PRIORITY);
+                            do_not_run(do_not_run::Context::new(priority))
+                        }
                         P1_T::foo => {
                             let () = (&*__rtic_internal_foo_INPUTS.get())
                                 .get_unchecked(usize::from(index))
@@ -218,6 +344,7 @@ pub mod app {
             },
         );
     }
+    /// #mod_app_timer_queue
     #[doc(hidden)]
     mod rtic_ext {
         use super::*;
@@ -229,6 +356,14 @@ pub mod app {
             (0..1u8)
                 .for_each(|i| {
                     (&mut *__rtic_internal_foo_FQ.get_mut()).enqueue_unchecked(i)
+                });
+            (0..1u8)
+                .for_each(|i| {
+                    (&mut *__rtic_internal_bar_FQ.get_mut()).enqueue_unchecked(i)
+                });
+            (0..1u8)
+                .for_each(|i| {
+                    (&mut *__rtic_internal_do_not_run_FQ.get_mut()).enqueue_unchecked(i)
                 });
             let mut core: rtic::export::Peripherals = rtic::export::Peripherals::steal()
                 .into();
@@ -264,7 +399,9 @@ pub mod app {
                 );
                 rtic::export::interrupt::enable();
             });
-            idle(idle::Context::new(&rtic::export::Priority::new(0)))
+            loop {
+                rtic::export::nop()
+            }
         }
     }
 }

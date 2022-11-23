@@ -1,5 +1,7 @@
 //! examples/hardware.rs
 
+
+
 #![deny(unsafe_code)]
 #![deny(warnings)]
 #![no_main]
@@ -29,7 +31,8 @@ mod app {
         (Shared {}, Local {}, init::Monotonics())
     }
 
-    #[task(binds = UART0)]
+
+    #[task(binds = UART0,priority = 1)]
     fn foo(_: foo::Context) {
 
         hprintln!("foo").unwrap();
