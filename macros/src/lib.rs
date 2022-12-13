@@ -14,8 +14,10 @@ use rtic_syntax::Settings;
 mod analyze;
 mod check;
 mod codegen;
+mod new_codegen;
 #[cfg(test)]
 mod tests;
+
 
 /// Attribute used to declare a RTIC application
 ///
@@ -26,6 +28,9 @@ mod tests;
 /// Should never panic, cargo feeds a path which is later converted to a string
 #[proc_macro_attribute]
 pub fn app(args: TokenStream, input: TokenStream) -> TokenStream {
+
+    let new = true;
+
     let mut settings = Settings::default();
     settings.optimize_priorities = false;
     settings.parse_binds = true;
@@ -43,8 +48,14 @@ pub fn app(args: TokenStream, input: TokenStream) -> TokenStream {
 
     let analysis = analyze::app(analysis, &app);
 
-    let ts = codegen::app(&app, &analysis, &extra);
 
+    let ts;
+
+    if new{
+        ts = new_codegen::app(&app, &analysis, &extra);
+    }else{ //"old"
+        ts = codegen::app(&app, &analysis, &extra);
+    }
     // Default output path: <project_dir>/target/
     let mut out_dir = Path::new("target");
 
@@ -56,7 +67,7 @@ pub fn app(args: TokenStream, input: TokenStream) -> TokenStream {
     let target_triple_prefix = "thumbv";
 
     // Check for special scenario where default target/ directory is not present
-    //
+    // cargo   expand --example basic_software_two_tasks > contents/expand.rs  --cfg 'new_codegen'
     // This is configurable in .cargo/config:
     //
     // [build]

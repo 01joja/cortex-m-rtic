@@ -1,7 +1,8 @@
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 
-use crate::{analyze::Analysis, check::Extra, codegen::util};
+use crate::new_codegen::{analyze::Analysis, check::Extra};
+use super::util;
 use rtic_syntax::ast::App;
 
 /// Generates compile-time assertions that check that types implement the `Send` / `Sync` traits
