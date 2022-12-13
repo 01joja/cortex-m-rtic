@@ -1,3 +1,6 @@
+#![allow(unused_imports)]
+#![allow(dead_code)]
+
 use core::sync::atomic::{AtomicUsize, Ordering};
 
 use proc_macro2::{Span, TokenStream as TokenStream2};
@@ -12,6 +15,12 @@ const RTIC_INTERNAL: &str = "__rtic_internal";
 /// Turns `capacity` into an unsuffixed integer literal
 pub fn capacity_literal(capacity: usize) -> LitInt {
     LitInt::new(&capacity.to_string(), Span::call_site())
+}
+
+/// Turns "priority" into an unsuffixed integer literal
+pub fn priority_literal(priority: &u8) -> LitInt {
+    let priority = format!("{}",priority);
+    LitInt::new(priority.as_str(),Span::call_site())
 }
 
 /// Identifier for the free queue
@@ -210,6 +219,10 @@ pub fn local_resources_ident(ctxt: Context, app: &App) -> Ident {
     s.push_str("LocalResources");
 
     mark_internal_name(&s)
+}
+
+pub fn enum_name(priority: &u8) -> Ident {
+    Ident::new(&format!("TASK_PRIO_{}", priority), Span::call_site())
 }
 
 /// Generates an identifier for a ready queue
