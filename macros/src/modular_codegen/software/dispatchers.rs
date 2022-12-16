@@ -117,7 +117,6 @@ pub fn codegen(
 
             
             let cap = task.args.capacity;
-            let cap_lit = util::capacity_literal(cap as usize);
             let cap_lit_p1 = util::capacity_literal(cap as usize + 1);
             
             
@@ -192,8 +191,6 @@ pub fn codegen(
             });
         }
 
-        
-        let dispatcher_prio = format!("dispatcher_{:}",priority);
         let interrupt_name = util::internal_task_ident(&interrupt, "");
         let interrupt_name_unsafe = util::internal_task_ident(&interrupt, "unsafe");
         

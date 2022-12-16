@@ -4,7 +4,7 @@ use rtic_syntax::{ast::{App, HardwareTask}, Context};
 
 use syn::{Attribute, Ident, LitInt, PatType};
 
-use crate::new_codegen::{
+use crate::modular_codegen::{
     analyze::Analysis,
     check::Extra,
 };

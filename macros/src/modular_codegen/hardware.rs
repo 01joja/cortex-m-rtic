@@ -24,7 +24,10 @@ pub fn codegen(
     app: &App, 
     analysis: &Analysis,
     extra: &Extra,
-) -> TokenStream2 {
+) -> (
+    // Returns the argument needed for rtic_syntax::parse()
+    TokenStream2,
+    TokenStream2) {
     let mut main = vec![];
 
     let user_imports = &app.user_imports;
@@ -74,7 +77,7 @@ pub fn codegen(
         }
     ));
 
-    let output = quote!(
+    let generated_code = quote!(
         /// The RTIC application module
         pub mod #name {
             /// Always include the device crate which contains the vector table
@@ -132,6 +135,12 @@ pub fn codegen(
         }
     );
 
-    output
+    let generated_argument = quote!(
+        // This is equal to the rtic macro:
+        // #[rtic::app(device = #device)]
+        device = #device
+    );
+
+    (generated_argument,generated_code)
 }
 

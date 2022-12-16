@@ -8,10 +8,10 @@ use proc_macro2::{TokenStream as TokenStream2};
 
 /// saves/prints information about app, a̶n̶a̶l̶y̶s̶i̶s̶  and extra
 /// to the corresponding folder in contents/
-pub fn AST(
+pub fn abstract_syntax_tree(
     app: &App, 
     _analysis: &Analysis,
-    extra: &Extra,
+    _extra: &Extra,
 ){
 
     create_folders();
@@ -67,7 +67,7 @@ fn create_folders(){
     }
 }
 
-pub fn software_TokenStream(software_output: &TokenStream2){
+pub fn software_token_stream(software_output: &TokenStream2){
 
     
     create_folders();
