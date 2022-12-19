@@ -1,9 +1,14 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
+
+fn print_type_of<T>(_: &T) {
+    println!("{}", std::any::type_name::<T>())
+}
+
 use quote::quote;
 use proc_macro2::{
-    //Span, 
+    Span, 
     TokenStream as TokenStream2};
 //use proc_macro::TokenStream;
 //use quote::quote;
@@ -29,6 +34,20 @@ mod hardware;
 
 use crate::{analyze::Analysis, check::Extra};
 
+/// #Modular RTIC
+/// 
+/// To run the modular RTIC specify a pass in the rtic::app()
+/// 
+/// Example:
+/// #[rtic::app(device = lm3s6965, compiler_passes = ["standard"])]
+/// 
+/// That runs the following passes (as of 19 of december 2022):
+/// rtic::parser -> codegen::software -> rtic::parser -> codegen::hardware -> output
+/// 
+/// Example of self-defined passes:
+/// #[rtic::app(device = lm3s6965, compiler_passes = ["hardware"])]
+/// rtic::parser -> codegen::hardware -> output
+///   
 pub fn app(
     user_argument: TokenStream, 
     user_code: TokenStream
@@ -50,22 +69,32 @@ pub fn app(
     
     //extracts the passes.
     let mut passes = app.args.passes.clone();
+
+    // adds a standard passes if standard is given.
+    if passes[0] == "standard"{
+        println!("standard");
+        passes = vec!["software".to_string(),"hardware".to_string()]
+    }
+
+    // reverses the passes
+    // so that the first pass given gets pop first in the loop.
+    passes.reverse();
+
     let mut generated_arguments = quote!();
     let mut generated_code = quote!();
-
-
     let mut skip_first_parse = true;
 
     loop{
         let pass = match passes.pop(){
             Some(s) => s,
-            None => {
+            None => {        
+                // no more passes and codegen terminates.
                 let print_generated_code = format!("{:#?}",generated_code);
                 fs::write("contents/generated_code.rs", print_generated_code).expect("Unable to write file");
                 return generated_code;
             }
         };
-        
+
         if skip_first_parse{
             skip_first_parse = false;
         }else{
@@ -77,53 +106,23 @@ pub fn app(
             };
         }
 
+        //let last_pass = passes.is_empty();
+
+        // add different passes here:
         match pass.as_str(){
             "software" => {
-                println!("software");
                 (generated_arguments, generated_code) 
-                    = software::codegen(&app,&analysis,&extra,&false);
+                    = software::codegen(&app,&analysis,&extra);
             }
             "hardware" => {
-                println!("hardware");
                 (generated_arguments, generated_code)  = hardware::codegen(&app,&analysis,&extra);
             }
-            _ => {
-                panic!("No matching pass found")
+            unknown_pass => {
+                let error = create_unknown_pass_error(unknown_pass);
+                panic!("{}",error);
             }
         }
-
-        
     }
-
-    
-
-    // let mut settings = Settings::default();
-    // settings.optimize_priorities = false;
-    // settings.parse_binds = true;
-    // settings.parse_extern_interrupt = true;
-
-
-    // let (app_hardware, analysis_hardware) = 
-    //     match rtic_syntax::parse(generated_arguments.into(), generated_code.into(), settings) {
-    //     Err(e) => {
-    //         println!("Failed pars after software");
-    //         return e.to_compile_error().into()},
-    //     Ok(x) => x,
-    // };
-
-
-    // let extra_hardware = match check::app(&app_hardware, &analysis_hardware) {
-    //     Err(e) => return e.to_compile_error().into(),
-    //     Ok(x) => x,
-    // };
-
-    // let analysis_hardware = analyze::app(analysis_hardware, &app_hardware);
-
-    // let output = hardware::codegen(&app_hardware,&analysis_hardware,&extra_hardware);
-
-    
-    
-    // output
 }
 
 /// Makes a call to the parser in rtic-syntax
@@ -155,5 +154,8 @@ fn call_parse(arguments: TokenStream, code: TokenStream) ->
     Ok((app, analysis, extra))
 }
 
-
-
+fn create_unknown_pass_error(error: &str) -> String{
+    let part1 = format!("Pass \"{}\" is not known. Try \"compiler_passes = [\"standard\"]\"",error);
+    let part2 = format!("\nto get the usual passes or look at the documentation in rtic.rs to see examples");
+    return format!("{}{}",part1,part2)
+}

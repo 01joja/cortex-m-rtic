@@ -53,10 +53,10 @@ pub fn app(args: TokenStream, input: TokenStream) -> TokenStream {
     // If app.args.passes dosen't contain anything
     // run the standard codegen.
     let ts;
-    if app.args.passes.len() == 0{
-        ts = modular_codegen::app(args_clone, input_clone);
-    }else{ //"old"
+    if app.args.passes.is_empty(){
         ts = codegen::app(&app, &analysis, &extra);
+    }else{
+        ts = modular_codegen::app(args_clone, input_clone);
     }
 
     // Default output path: <project_dir>/target/

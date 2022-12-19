@@ -17,8 +17,7 @@ mod dispatchers;
 pub fn codegen(
     app: &App, 
     analysis: &Analysis,
-    extra: &Extra,
-    debug: &bool
+    extra: &Extra
 ) -> (
     // Returns the argument needed for rtic_syntax::parse()
     TokenStream2,
@@ -29,21 +28,21 @@ pub fn codegen(
     // software tasks.
     TokenStream2) {
     
-    // Creates needed main function for valid output
-    // if it is debugged.
-    let debug_token;
-    if *debug {
-        debug_token = quote!{
-            #[doc(hidden)]
-            mod rtic_ext {
-                use super::*;
-                #[no_mangle]
-                unsafe extern "C" fn main() -> ! {}
-            }
-        };
-    }else{
-        debug_token = quote!();
-    }
+    // // Creates needed main function for valid output
+    // // if it is debugged.
+    // let debug_token;
+    // if *debug {
+    //     debug_token = quote!{
+    //         #[doc(hidden)]
+    //         mod rtic_ext {
+    //             use super::*;
+    //             #[no_mangle]
+    //             unsafe extern "C" fn main() -> ! {}
+    //         }
+    //     };
+    // }else{
+    //     debug_token = quote!();
+    // }
     
 
     let name = &app.name;
@@ -58,7 +57,7 @@ pub fn codegen(
 
     let user_init = codegen_init(app);
 
-    // user_idle, hardware_tasks and resources are untouched.
+    // user_idle, hardware_tasks and resources are untouched
     let user_idle = codegen_idle(app);
     let hardware_tasks = codegen_hardware(app);
     let resources = codegen_resources(app);
@@ -101,8 +100,8 @@ pub fn codegen(
             /// #overhead_software_tasks 
             #(#overhead_software_tasks)*
 
-            /// #debug_token
-            #debug_token
+            // /// #debug_token
+            // #debug_token
 
             /// #resources
             #resources
