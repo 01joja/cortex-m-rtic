@@ -7,7 +7,9 @@
 
 use panic_semihosting as _;
 
-#[rtic::app(device = lm3s6965, dispatchers = [UART0,UART1,UART2])]
+#[rtic::app(device = lm3s6965, 
+    dispatchers = [UART0,UART1,UART2,SSI0,I2C0,GPIOA,GPIOB,GPIOC], 
+    compiler_passes = ["software","hardware"])]
 mod app {
     use cortex_m_semihosting::{debug, hprintln};
 
@@ -21,8 +23,6 @@ mod app {
     fn init(_: init::Context) -> (Shared, Local, init::Monotonics) {
         bar::spawn().unwrap();
         foo::spawn().unwrap();
-        i_am_speed::spawn().unwrap();
-        number_two::spawn().unwrap();
         hprintln!("init").unwrap();
 
         (Shared {}, Local {}, init::Monotonics())

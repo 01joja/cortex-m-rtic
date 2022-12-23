@@ -22,7 +22,10 @@ proc-macro2 = "1"
 proc-macro-error = "1"
 quote = "1"
 syn = "1"
-rtic-syntax = { path = "../../hijack-rtic-syntax" }#"1.0.2"
+rtic-syntax = { git = "https://github.com/01joja/hijack-modular-rtic-syntax"} #"1.0.2"
+
+# [patch.crates-io]
+# rtic-syntax = { git = "https://github.com/01joja/hijack-modular-rtic-syntax"}
 
 #[patch.crates-io]
 #rtic-syntax = { path = "../../hijack-rtic-syntax" }

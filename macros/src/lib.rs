@@ -14,9 +14,10 @@ use rtic_syntax::Settings;
 mod analyze;
 mod check;
 mod codegen;
-mod new_codegen;
+mod modular_codegen;
 #[cfg(test)]
 mod tests;
+
 
 
 /// Attribute used to declare a RTIC application
@@ -29,7 +30,8 @@ mod tests;
 #[proc_macro_attribute]
 pub fn app(args: TokenStream, input: TokenStream) -> TokenStream {
 
-    let new = true;
+    let args_clone = args.clone();
+    let input_clone = input.clone();
 
     let mut settings = Settings::default();
     settings.optimize_priorities = false;
@@ -48,14 +50,15 @@ pub fn app(args: TokenStream, input: TokenStream) -> TokenStream {
 
     let analysis = analyze::app(analysis, &app);
 
-
+    // If app.args.passes dosen't contain anything
+    // run the standard codegen.
     let ts;
-
-    if new{
-        ts = new_codegen::app(&app, &analysis, &extra);
-    }else{ //"old"
+    if app.args.passes.is_empty(){
         ts = codegen::app(&app, &analysis, &extra);
+    }else{
+        ts = modular_codegen::app(args_clone, input_clone);
     }
+    
     // Default output path: <project_dir>/target/
     let mut out_dir = Path::new("target");
 
