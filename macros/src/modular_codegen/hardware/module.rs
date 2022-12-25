@@ -16,7 +16,8 @@ use rtic_syntax::{ast::App, Context};
 
 #[allow(clippy::too_many_lines)]
 pub fn codegen_original(
-    _idle: bool,
+    call_coming_from: &str,
+    idle: bool,
     init: bool,
     hw: bool,
     ctxt: Context,
@@ -44,7 +45,7 @@ pub fn codegen_original(
     match ctxt {
         Context::Init => {
             if !init{
-                println!("Module 001");
+                println!("Module 001 {}", call_coming_from);
             }
             fields.push(quote!(
                 /// Core (Cortex-M) peripherals
@@ -72,17 +73,21 @@ pub fn codegen_original(
 
             values.push(quote!(core));
         }
-        Context::Idle => {println!("Module 002");}
+        Context::Idle => {
+            if !idle{
+                println!("Module 002 {}", call_coming_from);
+            }
+        }
         Context::HardwareTask(_) => {
             if !hw{
-                println!("Module 003");
+                println!("Module 003 {}", call_coming_from);
             }
         } 
-        Context::SoftwareTask(_) => {println!("Module 004");}
+        Context::SoftwareTask(_) => {println!("Module 004 {}", call_coming_from);}
     }
 
     if ctxt.has_local_resources(app) {
-        println!("Module 005");
+        println!("Module 005 {}", call_coming_from);
         let ident = util::local_resources_ident(ctxt, app);
         let lt = if local_resources_tick {
             lt = Some(quote!('a));
@@ -105,7 +110,7 @@ pub fn codegen_original(
     }
 
     if ctxt.has_shared_resources(app) {
-        println!("Module 006");
+        println!("Module 006 {}", call_coming_from);
         let ident = util::shared_resources_ident(ctxt, app);
         let lt = if shared_resources_tick {
             lt = Some(quote!('a));
@@ -134,7 +139,7 @@ pub fn codegen_original(
 
     if let Context::Init = ctxt {
         if !init{
-            println!("Module 007");
+            println!("Module 007 {}", call_coming_from);
         }
         let monotonic_types: Vec<_> = app
             .monotonics
@@ -162,31 +167,34 @@ pub fn codegen_original(
     }
 
     let doc = match ctxt {
-        Context::Idle => {println!("Module 008"); "Idle loop"},
+        Context::Idle => {
+            if !idle{
+                println!("Module 008 {}", call_coming_from);
+            } "Idle loop"},
         Context::Init => {
             if !init{
-                println!("Module 009"); 
+                println!("Module 009 {}", call_coming_from); 
             }
             "Initialization function"},
         Context::HardwareTask(_) => {
             if !hw{
-                println!("Module 010"); 
+                println!("Module 010 {}", call_coming_from); 
             }
             "Hardware task"},
-        Context::SoftwareTask(_) => {println!("Module 011"); "Software task"},
+        Context::SoftwareTask(_) => {println!("Module 011 {}", call_coming_from); "Software task"},
     };
 
     let vector = Vec::new(); // only needed with software tasks.
     let cfgs = match ctxt {
         Context::HardwareTask(t) => {
             if !hw{
-                println!("Module 012");
+                println!("Module 012 {}", call_coming_from);
             } 
             &app.hardware_tasks[t].cfgs
             // ...
         }
         Context::SoftwareTask(t) => {
-            println!("Module 013");
+            println!("Module 013 {}", call_coming_from);
             &app.software_tasks[t].cfgs
             // ...
         }
@@ -195,31 +203,31 @@ pub fn codegen_original(
 
     let core = if ctxt.is_init() {
         if !init{
-            println!("Module 014"); 
+            println!("Module 014 {}", call_coming_from); 
         }
         Some(quote!(core: rtic::export::Peripherals,))
     } else {
-        if !hw{
-            println!("Module 015"); 
+        if !hw && !idle{
+            println!("Module 015 {}", call_coming_from); 
         }
         None
     };
 
     let priority = if ctxt.is_init() {
         if !init{
-            println!("Module 016"); 
+            println!("Module 016 {}", call_coming_from); 
         }
         None
     } else {
-        if !hw{
-            println!("Module 017"); 
+        if !hw && !idle{
+            println!("Module 017 {}", call_coming_from); 
         }
         Some(quote!(priority: &#lt rtic::export::Priority))
     };
 
     {
-        if !(hw || init){
-            println!("Module 018");
+        if !(hw || init || idle){
+            println!("Module 018 {}", call_coming_from);
         }
         let internal_context_name = util::internal_task_ident(name, "Context");
 
@@ -250,7 +258,7 @@ pub fn codegen_original(
     }
 
     if let Context::SoftwareTask(..) = ctxt {
-        println!("Module 019"); 
+        println!("Module 019 {}", call_coming_from); 
         let spawnee = &app.software_tasks[name];
         let priority = spawnee.args.priority;
         let t = util::spawn_t_ident(priority);
@@ -490,11 +498,11 @@ pub fn codegen_original(
     }
 
     if items.is_empty() {
-        println!("Module 020");
+        println!("Module 020 {}", call_coming_from);
         return quote!()
     } else {
-        if !(hw || init){
-            println!("Module 021"); 
+        if !(hw || init || idle){
+            println!("Module 021 {}", call_coming_from); 
         }
         return quote!(
             #(#items)*

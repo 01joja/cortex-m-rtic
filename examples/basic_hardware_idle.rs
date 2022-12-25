@@ -1,4 +1,4 @@
-//! examples/spawn.rs
+//! examples/hardware.rs
 
 #![deny(unsafe_code)]
 #![deny(warnings)]
@@ -7,7 +7,7 @@
 
 use panic_semihosting as _;
 
-#[rtic::app(device = lm3s6965, dispatchers = [SSI0],compiler_passes = ["software","hardware"])]
+#[rtic::app(device = lm3s6965, compiler_passes= ["hardware"])]
 mod app {
     use cortex_m_semihosting::{debug, hprintln};
 
@@ -19,16 +19,22 @@ mod app {
 
     #[init]
     fn init(_: init::Context) -> (Shared, Local, init::Monotonics) {
-        foo::spawn().unwrap();
+
         hprintln!("init").unwrap();
 
         (Shared {}, Local {}, init::Monotonics())
     }
 
-    #[task(priority = 1)]
-    fn foo(_: foo::Context) {
-        hprintln!("foo").unwrap();
+    #[idle]
+    fn idle(_: idle::Context) -> ! {
+
+        hprintln!("idle").unwrap();
+
 
         debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator
+
+        loop {
+            cortex_m::asm::nop();
+        }
     }
 }

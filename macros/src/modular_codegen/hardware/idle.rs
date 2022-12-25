@@ -1,4 +1,4 @@
-use proc_macro2::TokenStream as TokenStream2;
+use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::quote;
 use rtic_syntax::{ast::App, Context};
 
@@ -6,6 +6,8 @@ use crate::modular_codegen::{
     analyze::Analysis,
     check::Extra,
 };
+
+use syn::{Attribute, Ident};
 
 
 use super::{local_resources_struct, module, shared_resources_struct};
@@ -53,9 +55,8 @@ pub fn codegen(
             mod_app.push(constructor);
         }
 
-        println!("Now runs idle");
-
-        root_idle.push(module::codegen_original(
+        module::codegen_original(
+            "idle",
             true,
             false,
             false,
@@ -65,7 +66,67 @@ pub fn codegen(
             app,
             analysis,
             extra,
+        );
+
+        
+        //items - outside of the module.
+        let mut items = vec![];
+        //module_items - Things that are put in the function module
+        let mut module_items = vec![];
+        //fields - builds the execution context struct.
+        let fields: Vec<TokenStream2> = vec![];
+        //values - the implementation of execution context.
+        let values: Vec<TokenStream2> = vec![];
+        // Used to copy task cfgs to the whole module
+        let task_cfgs: Vec<TokenStream2> = vec![];
+
+        let lt:Option<TokenStream2> = None;
+
+        let doc = "idle loop";
+        let core:Option<TokenStream2> = None;
+        let priority = Some(quote!(priority: &#lt rtic::export::Priority));
+
+        let internal_context_name = Ident::new(&format!("__rtic_idle_{}_context", name), Span::call_site());
+
+        let cfgs: Vec<Attribute> = vec![];
+
+        items.push(quote!(
         ));
+
+        module_items.push(quote!(
+        ));
+
+        root_idle.push(quote!(
+            #(#items)*
+
+            #(#cfgs)*
+            /// Execution context
+            #[allow(non_snake_case)]
+            #[allow(non_camel_case_types)]
+            pub struct #internal_context_name<#lt> {
+                #(#fields,)*
+            }
+
+            #(#cfgs)*
+            impl<#lt> #internal_context_name<#lt> {
+                #[inline(always)]
+                pub unsafe fn new(#core #priority) -> Self {
+                    #internal_context_name {
+                        #(#values,)*
+                    }
+                }
+            }
+
+            #[allow(non_snake_case)]
+            #(#task_cfgs)*
+            #[doc = #doc]
+            pub mod #name {
+                #(#cfgs)*
+                pub use super::#internal_context_name as Context;
+                #(#module_items)*
+            }
+        ));
+
 
         let attrs = &idle.attrs;
         let context = &idle.context;

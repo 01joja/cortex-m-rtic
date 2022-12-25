@@ -44,4 +44,24 @@ mod app {
 
         hprintln!("bar").unwrap();
     }
+
+    #[idle(local = [local_to_idle])]
+    fn idle(cx: idle::Context) -> ! {
+        let local_to_idle = cx.local.local_to_idle;
+        *local_to_idle += 1;
+
+        hprintln!("idle: local_to_idle = {}", local_to_idle).unwrap();
+
+        debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator
+
+        // error: no `local_to_foo` field in `idle::LocalResources`
+        // _cx.local.local_to_foo += 1;
+
+        // error: no `local_to_bar` field in `idle::LocalResources`
+        // _cx.local.local_to_bar += 1;
+
+        loop {
+            cortex_m::asm::nop();
+        }
+    }
 }

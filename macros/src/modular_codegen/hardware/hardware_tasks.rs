@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use proc_macro2::TokenStream as TokenStream2;
+use proc_macro2::{TokenStream as TokenStream2, Span};
 use quote::quote;
 use rtic_syntax::{ast::{App, HardwareTask}, Context};
 
@@ -13,7 +13,6 @@ use crate::modular_codegen::{
 
 use super::{module,local_resources_struct,shared_resources_struct};
 
-use crate::codegen::util;
 
 /// Generate support code for hardware tasks (`#[exception]`s and `#[interrupt]`s)
 pub fn codegen(
@@ -74,7 +73,8 @@ pub fn codegen(
             mod_app.push(constructor);
         }
 
-        let _module = module::codegen_original(
+        module::codegen_original(
+            "hardware",
             false,
             false,
             true,
@@ -199,7 +199,7 @@ fn module_func(
     let priority = quote!(priority: &#lt rtic::export::Priority);
     
     // Module 018
-    let internal_context_name = util::internal_task_ident(name, "Context");
+    let internal_context_name = Ident::new(&format!("__rtic_idle_{}_context", name), Span::call_site());
     items.push(quote!(
         #(#cfgs)*
         /// Execution context

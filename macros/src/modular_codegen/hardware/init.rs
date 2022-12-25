@@ -115,7 +115,8 @@ pub fn codegen(
     let main_init = codegen_main_init(name, app, analysis, extra);
 
 
-    let _module1 = module::codegen_original(
+    module::codegen_original(
+        "init",
         false,
         true,
         false,
