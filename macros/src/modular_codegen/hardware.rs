@@ -28,6 +28,11 @@ pub fn codegen(
     // Returns the argument needed for rtic_syntax::parse()
     TokenStream2,
     TokenStream2) {
+
+    if !app.software_tasks.is_empty(){
+        panic!("the hardware pass can't handle software tasks. Try adding \"software\" to compiler_passes");
+    }
+    
     let mut main = vec![];
 
     let user_imports = &app.user_imports;

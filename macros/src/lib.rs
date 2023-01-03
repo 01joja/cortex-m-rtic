@@ -121,6 +121,6 @@ pub fn app(args: TokenStream, input: TokenStream) -> TokenStream {
         println!("Write file:\n{}/rtic-expansion.rs\n", out_str);
         fs::write(format!("{}/rtic-expansion.rs", out_str), ts.to_string()).ok();
     }
-
+    
     ts.into()
 }

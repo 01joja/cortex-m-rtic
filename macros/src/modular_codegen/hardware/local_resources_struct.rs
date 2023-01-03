@@ -14,10 +14,25 @@ pub fn codegen_original(ctxt: Context, needs_lt: &mut bool, app: &App) -> (Token
     let caller;
 
     let resources = match ctxt {
-        Context::Init => {caller = "Init"; println!("local_r_str 000 {}", caller); &app.init.args.local_resources},
-        Context::Idle => {caller = "Idle"; println!("local_r_str 001 {}", caller); &app.idle.as_ref().unwrap().args.local_resources},
-        Context::HardwareTask(name) => {caller = "Hardware"; println!("local_r_str 002 {}", caller); &app.hardware_tasks[name].args.local_resources},
-        Context::SoftwareTask(name) => {caller = "Software"; println!("local_r_str 003 {}", caller); &app.software_tasks[name].args.local_resources},
+        Context::Init => {
+            caller = "Init"; 
+            println!("local_r_str 000 {}", caller); 
+            &app.init.args.local_resources
+        },
+        Context::Idle => {
+            caller = "Idle"; 
+            &app.idle.as_ref().unwrap().args.local_resources
+        },
+        Context::HardwareTask(name) => {
+            caller = "Hardware"; 
+            println!("local_r_str 002 {}", caller); 
+            &app.hardware_tasks[name].args.local_resources
+        },
+        Context::SoftwareTask(name) => {
+            caller = "Software"; 
+            println!("local_r_str 003 {}", caller); 
+            &app.software_tasks[name].args.local_resources
+        },
     };
 
     let task_name = util::get_task_name(ctxt, app);
@@ -27,7 +42,7 @@ pub fn codegen_original(ctxt: Context, needs_lt: &mut bool, app: &App) -> (Token
     let mut has_cfgs = false;
 
     for (name, task_local) in resources {
-        println!("local_r_str {:?}",name);
+        println!("local_r_str task {}", name.to_string());
         let (cfgs, ty, is_declared) = match task_local {
             TaskLocal::External => {
                 println!("local_r_str 004 {}", caller); 
@@ -101,6 +116,7 @@ pub fn codegen_original(ctxt: Context, needs_lt: &mut bool, app: &App) -> (Token
 
     let doc = format!("Local resources `{}` has access to", ctxt.ident(app));
     let ident = util::local_resources_ident(ctxt, app);
+    println!("output {}",ident);
     let item = quote!(
         #[allow(non_snake_case)]
         #[allow(non_camel_case_types)]

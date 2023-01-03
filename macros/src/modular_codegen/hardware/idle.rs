@@ -10,7 +10,12 @@ use crate::modular_codegen::{
 use syn::{Attribute, Ident};
 
 
-use super::{local_resources_struct, module, shared_resources_struct};
+use super::{
+    local_resources_struct, 
+    module, 
+    shared_resources_struct, 
+    local_resources
+};
 
 /// Generates support code for `#[idle]` functions
 pub fn codegen(
@@ -74,13 +79,21 @@ pub fn codegen(
         //module_items - Things that are put in the function module
         let mut module_items = vec![];
         //fields - builds the execution context struct.
-        let fields: Vec<TokenStream2> = vec![];
+        let mut fields: Vec<TokenStream2> = vec![];
         //values - the implementation of execution context.
-        let values: Vec<TokenStream2> = vec![];
+        let mut values: Vec<TokenStream2> = vec![];
         // Used to copy task cfgs to the whole module
         let task_cfgs: Vec<TokenStream2> = vec![];
-
-        let lt:Option<TokenStream2> = None;
+        
+        let mut lt = None;
+        if !idle.args.local_resources.is_empty(){
+            let (module_item, field, value, lt_return) 
+                = local_resources::codegen_module(name,local_needs_lt);
+            module_items.push(module_item);
+            fields.push(field);
+            values.push(value);
+            lt = lt_return;
+        }
 
         let doc = "idle loop";
         let core:Option<TokenStream2> = None;
@@ -95,6 +108,7 @@ pub fn codegen(
 
         module_items.push(quote!(
         ));
+        
 
         root_idle.push(quote!(
             #(#items)*

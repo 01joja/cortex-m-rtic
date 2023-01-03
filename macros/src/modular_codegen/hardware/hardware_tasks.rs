@@ -11,7 +11,7 @@ use crate::modular_codegen::{
     check::Extra,
 };
 
-use super::{module,local_resources_struct,shared_resources_struct};
+use super::{module,local_resources_struct,shared_resources_struct,local_resources};
 
 
 /// Generate support code for hardware tasks (`#[exception]`s and `#[interrupt]`s)
@@ -47,6 +47,7 @@ pub fn codegen(
         let mut local_needs_lt = false;
 
         // `${task}Locals`
+        // should be together with local_resources call.
         if !task.args.local_resources.is_empty() {
             let (item, constructor) = local_resources_struct::codegen_original(
                 Context::HardwareTask(name),
@@ -86,16 +87,19 @@ pub fn codegen(
             extra
         );
 
+        let has_local_resources = !task.args.local_resources.is_empty();
+
         // Fixes the specific modules for hardware.
-        let module2 = module_func(
+        let module = module_func(
             name,
+            has_local_resources,
             local_needs_lt,
             app,
             analysis,
             extra
         );
         // println!("module: \n{:?}\nmodlue2: \n{:?}", module,module2);
-        root.push(module2);
+        root.push(module);
 
         user_tasks.push(user_task(name,task));
 
@@ -157,8 +161,10 @@ fn config_priority(name: &Ident,task: &HardwareTask,) -> TokenStream2{
 fn module_func(
     name: &Ident,
     //shared_resources_tick:bool, not used for now.
-    local_resources_tick:bool, //not used for now
+    has_local_resources:bool,
+    local_resources_tick:bool, 
     app: &App, 
+
     _analysis: &Analysis,
     _extra: &Extra,
     ) -> TokenStream2{
@@ -169,22 +175,25 @@ fn module_func(
     // it will be inside "pub mod #name"
     let mut module_items = vec![];
     // fields - builds the execution context struct.
-    // Need to implement after shared and local resources
-    let fields: Vec<TokenStream2> = vec![];
+    let mut fields: Vec<TokenStream2> = vec![];
     // values - the implementation of execution context.
-    // Need to implement after shared and local resources
-    let values: Vec<TokenStream2> = vec![];
+    let mut values: Vec<TokenStream2> = vec![];
     // Used to copy task cfgs to the whole module
     // Don't think this will be needed here. It is only used in software.
     let task_cfgs: Vec<Attribute> = vec![];
 
     // Module 005
-    let lt = if local_resources_tick {
-        //lt = Some(quote!('a));
-        Some(quote!('a))
-    } else {
-        None
-    };
+    //should be together with call to local_resources_struct.
+    let mut lt = None;
+    if has_local_resources{
+        let (module_item, field, value, lt_return) 
+            = local_resources::codegen_module(name,local_resources_tick);
+        module_items.push(module_item);
+        fields.push(field);
+        values.push(value);
+        lt = lt_return;
+    }
+
 
     // Module 010
     let doc = "Hardware task";

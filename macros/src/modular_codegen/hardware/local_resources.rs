@@ -1,6 +1,7 @@
-use proc_macro2::TokenStream as TokenStream2;
+use proc_macro2::{Span, TokenStream as TokenStream2};
+use syn::{Ident};
 use quote::quote;
-use rtic_syntax::ast::App;
+use rtic_syntax::{ast::App, Context};
 
 use crate::{analyze::Analysis, check::Extra, codegen::util};
 
@@ -74,3 +75,45 @@ pub fn codegen(
 
     (mod_app, TokenStream2::new())
 }
+
+
+// Represent Module 005
+pub fn codegen_module(name: &Ident, local_resources_tick:bool) ->
+    (   
+        // module_item
+        TokenStream2,
+        // field
+        TokenStream2,
+        // values
+        TokenStream2,
+        // new value of lt
+        Option<TokenStream2>
+    )
+    {
+
+    let name_indent = Ident::new(&format!("__rtic_internal_{}LocalResources", name), Span::call_site());
+    println!("name_indent {}",name_indent);
+
+
+    let lt = if local_resources_tick {
+        Some(quote!('a))
+    } else {
+        None
+    };
+
+    let module_item = quote!{
+        #[doc(inline)]
+        pub use super::#name_indent as LocalResources;
+    };
+
+    
+    let field = quote!(
+        /// Local Resources this task has access to
+        pub local: #name::LocalResources<#lt>
+    );
+
+    let value = quote!(local: #name::LocalResources::new());
+
+    (module_item, field, value, lt)
+}
+

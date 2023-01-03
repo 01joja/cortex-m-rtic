@@ -1,7 +1,8 @@
 use crate::{analyze::Analysis, check::Extra, codegen::util};
-use proc_macro2::TokenStream as TokenStream2;
+use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::quote;
 use rtic_syntax::{ast::App, Context};
+use syn::{Ident};
 
 //Added a panic so that no software tasks may pass module.
 
@@ -87,8 +88,11 @@ pub fn codegen_original(
     }
 
     if ctxt.has_local_resources(app) {
-        println!("Module 005 {}", call_coming_from);
+        if !idle && !hw{
+            println!("Module 005 {}", call_coming_from);
+        }
         let ident = util::local_resources_ident(ctxt, app);
+        
         let lt = if local_resources_tick {
             lt = Some(quote!('a));
             Some(quote!('a))
