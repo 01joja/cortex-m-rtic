@@ -13,6 +13,9 @@ use super::hardware;
 use crate::codegen::util;
 
 mod dispatchers;
+mod tasks;
+mod sw_names;
+
 
 pub fn codegen(
     app: &App, 
@@ -26,24 +29,8 @@ pub fn codegen(
     // After this rtic_syntax::parse should not find any
     // software tasks.
     TokenStream2) {
-    
-    // // Creates needed main function for valid output
-    // // if it is debugged.
-    // let debug_token;
-    // if *debug {
-    //     debug_token = quote!{
-    //         #[doc(hidden)]
-    //         mod rtic_ext {
-    //             use super::*;
-    //             #[no_mangle]
-    //             unsafe extern "C" fn main() -> ! {}
-    //         }
-    //     };
-    // }else{
-    //     debug_token = quote!();
-    // }
-    
 
+    // Untouched in software.
     let name = &app.name;
     let device = &extra.device;
     let user_imports = &app.user_imports;
@@ -74,6 +61,12 @@ pub fn codegen(
             /// #user_imports
             #(#user_imports)*
 
+            /// #dispatchers
+            #(#dispatchers)*
+
+            /// #software_tasks
+            #(#software_tasks)*
+
             /// #user_init
             #user_init
 
@@ -88,12 +81,6 @@ pub fn codegen(
 
             /// #hardware_tasks
             #(#hardware_tasks)*
-            
-            /// #dispatchers
-            #(#dispatchers)*
-
-            /// #software_tasks
-            #(#software_tasks)*
 
             /// #resources
             #resources
@@ -117,12 +104,7 @@ fn codegen_init(app:&App) -> TokenStream2{
 
     let user_init_return = quote! {#shared, #local, #name::Monotonics};
 
-    // let mut a_vector = vec![];
-    // for i in stmts{
-    //     a_vector.push(format!("{:?}",i));
-    // }
-    // println!("{:?}",a_vector);
-
+    // Software tasks needs to be initialized before anything else happens.
     let init_software_call; 
     if app.software_tasks.is_empty(){
         init_software_call = quote!();
@@ -135,6 +117,7 @@ fn codegen_init(app:&App) -> TokenStream2{
         #(#attrs)*
         #[init]
         fn #name(#context: #name::Context) -> (#user_init_return) {
+            /// From software tasks
             #init_software_call
             #(#stmts)*
         }

@@ -26,7 +26,7 @@ use rtic_syntax::P;
 use crate::analyze;
 use crate::check;
 
-mod software;
+mod software_tasks;
 mod print;
 mod hardware;
 
@@ -72,7 +72,6 @@ pub fn app(
 
     // adds a standard passes if standard is given.
     if passes[0] == "standard"{
-        println!("standard");
         passes = vec!["software".to_string(),"hardware".to_string()]
     }
 
@@ -110,7 +109,7 @@ pub fn app(
         match pass.as_str(){
             "software" => {
                 (generated_arguments, generated_code) 
-                    = software::codegen(&app,&extra);
+                    = software_tasks::codegen(&app,&extra);
             }
             "hardware" => {
                 (generated_arguments, generated_code)  = hardware::codegen(&app,&analysis,&extra);
