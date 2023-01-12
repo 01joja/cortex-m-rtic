@@ -87,6 +87,7 @@ pub fn codegen(
         
         let mut lt = None;
         if !idle.args.local_resources.is_empty(){
+            println!("ja,jo jag körs allt");
             let (module_item, field, value, lt_return) 
                 = local_resources::codegen_module(name,local_needs_lt);
             module_items.push(module_item);

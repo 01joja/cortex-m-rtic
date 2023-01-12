@@ -2,7 +2,9 @@
 
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
-use rtic_syntax::{ast::App, analyze::Priority};
+use rtic_syntax::{
+    ast::{App, SharedResource, SharedResources, LocalResources}, 
+    analyze::Priority};
 use std::fs;
 
 use std::str::FromStr;
@@ -13,7 +15,7 @@ use super::hardware;
 use crate::codegen::util;
 
 mod dispatchers;
-mod tasks;
+mod software_tasks;
 mod sw_names;
 
 
@@ -132,9 +134,19 @@ fn codegen_idle(app:&App) -> Option<TokenStream2>{
         let attrs = &idle.attrs;
         let context = &idle.context;
         let stmts = &idle.stmts;
+
+        let resources = generate_resource(
+            &idle.args.local_resources,
+            &idle.args.shared_resources,
+        );
+
+        println!("{:?}",resources);
+
         Some(quote!(
             #(#attrs)*
             #[allow(non_snake_case)]
+            #[idle(#(#resources)*)]
+            //#[idle]
             fn #name(#context: #name::Context) -> ! {
                 #(#stmts)*
             }
@@ -147,6 +159,7 @@ fn codegen_idle(app:&App) -> Option<TokenStream2>{
 }
 
 /// Recreates the hardware tasks so they can be parsed again
+/// #[task(binds = <>, priority = <>, local_resources = vec<>, local_resources = vec<>)]
 fn codegen_hardware(app: &App) -> Vec<TokenStream2>{
     
     let mut hw_tasks = vec![];
@@ -162,13 +175,15 @@ fn codegen_hardware(app: &App) -> Vec<TokenStream2>{
         // and can there for be put as a priority value 
         let priority = util::priority_literal(&task.args.priority);
 
-        // let test = TokenStream::from_str(&format!("{:08b}", value)).unwrap();
-        // println!("{:?}",format!("{:?}",test));
+        let resources = generate_resource(
+            &task.args.local_resources,
+            &task.args.shared_resources,
+        );
 
         hw_tasks.push(quote!{
 
             #(#attrs)*
-            #[task(binds = #binds, priority = #priority)]
+            #[task(binds = #binds, priority = #priority, #(#resources)*)]
             fn #name(#context: #name::Context) {
                 #(#stmts)*
             }
@@ -207,3 +222,30 @@ fn codegen_resources(app: &App) -> TokenStream2 {
         struct Shared{#(#shared)*}
     )
 }
+
+/// generates resource attributes so that no resources is lost
+fn generate_resource(
+    local_resources: &LocalResources,
+    shared_resources: &SharedResources
+) -> Vec<TokenStream2>{
+    let mut resource = vec![];
+    if !local_resources.is_empty(){
+        let mut locals = vec![];
+        for local in local_resources{
+            let ident = local.0;
+            locals.push(quote!(#ident, ))
+        }
+        resource.push(quote!(local = [#(#locals)*]));
+    }
+    if !shared_resources.is_empty(){
+        let mut shareds = vec![];
+        for local in shared_resources{
+            let ident = local.0;
+            shareds.push(quote!(#ident, ))
+        }
+        resource.push(quote!(shared = [#(#shareds)*]));
+    }
+    resource
+
+}
+

@@ -25,7 +25,8 @@ use syn::{Ident, LitInt, Path};
 pub fn generate_software_task(
     name: &Ident, 
     task: &SoftwareTask,
-    same_prio_tasks: &Ident,
+    dispatcher_name: &Ident,
+    dispatcher_tasks_name: &Ident,
     dispatcher_queue: &Ident,
     device: &Path,
     interrupt: &Ident
@@ -35,7 +36,11 @@ pub fn generate_software_task(
     // match spawn
     TokenStream2,
     // the software task and overhead.
-    TokenStream2
+    TokenStream2,
+    // local resources,
+    TokenStream2,
+    // shared resources,
+    Vec<String>
     ){
     let attrs = &task.attrs;
     let cfgs = &task.cfgs;
@@ -54,8 +59,20 @@ pub fn generate_software_task(
         });
     };
 
+    let mut local_resources = quote!();
+    // Don't know what and how external works. So just throws it away.
+    for (local_resource, _external) in &task.args.local_resources{
+        local_resources = quote!(#local_resource);
+    }
+
+    let mut shared_resources = vec![];
+    // Need to look in to access. Is it &mut and &? 
+    for (shared_resource, _access) in &task.args.shared_resources{
+        shared_resources.push(shared_resource.to_string().clone());
+    }
+
     // function inputs (context, message passing etcetera)
-    let function_context = &task.context;
+    let context = &task.context;
     let mut task_messages: Vec<TokenStream2> = vec![];
     let mut task_messages_internal: Vec<TokenStream2> = vec![];
     let mut task_messages_names: Vec<TokenStream2> = vec![];
@@ -76,7 +93,7 @@ pub fn generate_software_task(
     // Binds foo::spawn().unwrap(); to function foo in the dispatcher
     // match statement.
     let bind_spawn_to_software_task = quote!{
-        #same_prio_tasks::#name =>{
+        #dispatcher_tasks_name::#name =>{
             let (#(#task_messages_names)*) = (&*#input_queue.get())
                 .get_unchecked(usize::from(index))
                 .as_ptr()
@@ -86,7 +103,7 @@ pub fn generate_software_task(
                 .0
                 .enqueue_unchecked(index);
             let priority = &rtic::export::Priority::new(PRIORITY);
-            #name(#name::Context::new(priority), #(#task_messages_names)*)
+            #name(context,#(#task_messages_names)*)
         }
     };
 
@@ -97,7 +114,7 @@ pub fn generate_software_task(
         #(#attrs)*
         #(#cfgs)*
         #[allow(non_snake_case)]
-        fn #name(#function_context: #name::Context, #(#task_messages)*){
+        fn #name(#context: #dispatcher_name::Context, #(#task_messages)*){
             use rtic::Mutex as _;
             use rtic::mutex::prelude::*;
             #(#stmts)*
@@ -106,7 +123,6 @@ pub fn generate_software_task(
 
     
 
-    let context = sw_names::task_variable(name, "context");
     let spawn_name = sw_names::task_variable(name,"spawn");
     
     let capacity = task.args.capacity as usize;
@@ -145,7 +161,7 @@ pub fn generate_software_task(
 
         /// Binds internal task overhead to the user defined task.
         pub mod #name {
-            pub use super::#context as Context;
+            // pub use super::#context as Context;
             pub use super::#spawn_name as spawn;
         }
 
@@ -158,15 +174,6 @@ pub fn generate_software_task(
             [core::mem::MaybeUninit<(#(#task_messages_types)*)>; #capacity_literal],> = rtic::RacyCell::new([
             #(#vec_of_maybe_unit)*
         ]);
-
-        /// internal task context (only priority for now)
-        pub struct #context {}
-        impl #context{
-            #[inline(always)]
-            pub unsafe fn new(priority: &rtic::export::Priority) -> Self{
-                #context {}
-            }
-        }
 
         /// internal spawn function for task
         pub fn #spawn_name(#(#task_messages_internal)*) -> Result<(),(#(#task_messages_types)*)>{
@@ -182,7 +189,7 @@ pub fn generate_software_task(
                             .write(input);
                         rtic::export::interrupt::free(|_| {
                             (&mut *#dispatcher_queue.get_mut())
-                            .enqueue_unchecked((#same_prio_tasks::#name, index));
+                            .enqueue_unchecked((#dispatcher_tasks_name::#name, index));
                         });
             
                         rtic::pend(#device::interrupt::#interrupt);
@@ -204,5 +211,8 @@ pub fn generate_software_task(
     return (
         allocate_software_task_queue,
         bind_spawn_to_software_task,
-        software_task)
+        software_task,
+        local_resources,
+        shared_resources
+    );
 }

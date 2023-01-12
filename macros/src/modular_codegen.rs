@@ -26,7 +26,7 @@ use rtic_syntax::P;
 use crate::analyze;
 use crate::check;
 
-mod software_tasks;
+mod software_tasks_pass;
 mod print;
 mod hardware;
 
@@ -109,7 +109,7 @@ pub fn app(
         match pass.as_str(){
             "software" => {
                 (generated_arguments, generated_code) 
-                    = software_tasks::codegen(&app,&extra);
+                    = software_tasks_pass::codegen(&app,&extra);
             }
             "hardware" => {
                 (generated_arguments, generated_code)  = hardware::codegen(&app,&analysis,&extra);

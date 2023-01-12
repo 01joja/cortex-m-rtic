@@ -11,7 +11,7 @@ use crate::{
     codegen::util,
 };
 
-use super::{tasks,sw_names};
+use super::{software_tasks,sw_names};
 
 
 use syn::{Ident, LitInt, Path};
@@ -56,6 +56,11 @@ pub fn codegen(
     for (priority,tasks) in priority_to_tasks{
         let interrupt = interrupts.pop().unwrap().0; 
         
+        // Named the dispatcher after the interrupt it was assigned. 
+        let dispatcher_name = sw_names::dispatcher_variable( &interrupt.to_string());
+        let dispatcher_name_unsafe = sw_names::dispatcher_variable(&(interrupt.to_string() + "_unsafe"));
+
+
         // Used to be able to access all tasks with the same dispatcher
         let mut match_spawn_software_task = vec![];
         let mut dispatcher_tasks = vec![];
@@ -64,6 +69,9 @@ pub fn codegen(
         // Request queue holds the order of requested task. So they
         // can be dispatched in order.
         let dispatcher_request_queue = sw_names::dispatcher_variable(&format!("request_queue_{priority}"));
+
+        let mut local_resources = vec![];
+        let mut shared_resources = vec![];
 
         // Capacity for the dispatcher queue.
         // Needs to be the capacity of all capacity of all tasks
@@ -81,10 +89,13 @@ pub fn codegen(
             // See tasks.rs
             let (allocate_software_task_queue,
                 bind_spawn_to_software_task,
-                software_task) = 
-                    tasks::generate_software_task(
+                software_task,
+                task_local_resources,
+                task_shared_resources) = 
+                    software_tasks::generate_software_task(
                         name,
                         task,
+                        &dispatcher_name,
                         &dispatcher_tasks_name,
                         &dispatcher_request_queue,
                         device,
@@ -94,12 +105,32 @@ pub fn codegen(
             init_tasks.push(allocate_software_task_queue);
             match_spawn_software_task.push(bind_spawn_to_software_task);
             software_tasks.push(software_task);
+            local_resources.push(task_local_resources);
+            for resource in task_shared_resources{
+                if !shared_resources.contains(&resource){
+                    shared_resources.push(resource);
+                }
+            }
         }
+
+        
+        let mut local = vec![];
+        if !local_resources.is_empty(){
+            for resource in local_resources{
+                local.push(quote!(#resource,));
+            }
+        }
+
+        let mut shared = vec![];
+        if !shared_resources.is_empty(){
+            for resource in shared_resources{
+                shared.push(quote!(#resource,));
+            }
+        }
+        let resources = quote!(local = [#(#local)*], shared = [#(#shared)*]);
+
         
         let priority_lit = LitInt::new(&format!("{}",&priority),Span::call_site());
-        let interrupt_name = util::internal_task_ident(&interrupt, "");
-        let interrupt_name_unsafe = util::internal_task_ident(&interrupt, "unsafe");
-        
         let capacity = LitInt::new(&format!("{}",capacity_usize), Span::call_site());
         let dispatcher_request_queue_size = quote!(rtic::export::SCRQ<#dispatcher_tasks_name,#capacity>);
 
@@ -108,12 +139,12 @@ pub fn codegen(
         // different software tasks of same prio as functions.
         dispatchers.push(quote!(
             /// The real dispatcher
-            #[task(binds = #interrupt, priority = #priority_lit)]
-            fn #interrupt_name(_: #interrupt_name::Context){
-                #interrupt_name_unsafe();
+            #[task(binds = #interrupt, priority = #priority_lit, #resources)]
+            fn #dispatcher_name(context: #dispatcher_name::Context){
+                #dispatcher_name_unsafe(context);
             }
 
-            fn #interrupt_name_unsafe(){
+            fn #dispatcher_name_unsafe(context: #dispatcher_name::Context){
                 unsafe{
                     const PRIORITY: u8 = #priority;
                     rtic::export::run(
@@ -128,7 +159,7 @@ pub fn codegen(
                             }
                         },
                     );
-                    }
+                }
             }
 
             /// All software tasks belonging to prio X
