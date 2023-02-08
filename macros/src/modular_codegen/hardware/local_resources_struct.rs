@@ -21,6 +21,7 @@ pub fn codegen_original(ctxt: Context, needs_lt: &mut bool, app: &App) -> (Token
         },
         Context::Idle => {
             caller = "Idle"; 
+            println!("local_r_str 001 {}", caller); 
             &app.idle.as_ref().unwrap().args.local_resources
         },
         Context::HardwareTask(name) => {

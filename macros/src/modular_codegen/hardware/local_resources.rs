@@ -94,7 +94,6 @@ pub fn codegen_module(name: &Ident, local_resources_tick:bool) ->
     let name_indent = Ident::new(&format!("__rtic_internal_{}LocalResources", name), Span::call_site());
     println!("name_indent {}",name_indent);
 
-
     let lt = if local_resources_tick {
         Some(quote!('a))
     } else {
@@ -105,7 +104,6 @@ pub fn codegen_module(name: &Ident, local_resources_tick:bool) ->
         #[doc(inline)]
         pub use super::#name_indent as LocalResources;
     };
-
     
     let field = quote!(
         /// Local Resources this task has access to

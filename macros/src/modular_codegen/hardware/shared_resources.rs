@@ -1,5 +1,6 @@
 use crate::{analyze::Analysis, check::Extra, codegen::util};
-use proc_macro2::TokenStream as TokenStream2;
+use proc_macro2::{Span, TokenStream as TokenStream2};
+use syn::{Ident};
 use quote::quote;
 use rtic_syntax::{analyze::Ownership, ast::App};
 use std::collections::HashMap;
@@ -193,3 +194,43 @@ pub fn codegen(
 
     (mod_app, mod_resources)
 }
+
+
+// Represent Module 006
+pub fn codegen_module(name: &Ident, local_resources_tick:bool) ->
+    (   
+        // module_item
+        TokenStream2,
+        // field
+        TokenStream2,
+        // values
+        TokenStream2,
+        // new value of lt
+        Option<TokenStream2>
+    )
+    {
+
+    let name_indent = Ident::new(&format!("__rtic_internal_{}SharedResources", name), Span::call_site());
+    println!("name_indent {}",name_indent);
+
+    let lt = if local_resources_tick {
+        Some(quote!('a))
+    } else {
+        None
+    };
+
+    let module_item = quote!{
+        #[doc(inline)]
+        pub use super::#name_indent as SharedResources;
+    };
+    
+    let field = quote!(
+        /// Shared Resources this task has access to
+        pub shared: #name::SharedResources<#lt>
+    );
+
+    let value = quote!(shared: #name::SharedResources::new(priority));
+
+    (module_item, field, value, lt)
+}
+

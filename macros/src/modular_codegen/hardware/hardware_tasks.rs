@@ -11,7 +11,13 @@ use crate::modular_codegen::{
     check::Extra,
 };
 
-use super::{module,local_resources_struct,shared_resources_struct,local_resources};
+use super::{
+    module,
+    local_resources_struct,
+    local_resources,
+    shared_resources_struct,
+    shared_resources,
+};
 
 
 /// Generate support code for hardware tasks (`#[exception]`s and `#[interrupt]`s)
@@ -47,7 +53,6 @@ pub fn codegen(
         let mut local_needs_lt = false;
 
         // `${task}Locals`
-        // should be together with local_resources call.
         if !task.args.local_resources.is_empty() {
             let (item, constructor) = local_resources_struct::codegen_original(
                 Context::HardwareTask(name),
@@ -88,10 +93,13 @@ pub fn codegen(
         );
 
         let has_local_resources = !task.args.local_resources.is_empty();
+        let has_shared_resources = !task.args.shared_resources.is_empty();
 
         // Fixes the specific modules for hardware.
         let module = module_func(
             name,
+            has_shared_resources,
+            shared_needs_lt,
             has_local_resources,
             local_needs_lt,
             app,
@@ -155,12 +163,10 @@ fn config_priority(name: &Ident,task: &HardwareTask,) -> TokenStream2{
     )
 }
 
-// During basic:
-//["Module 003", "Module 010", "Module 012", "Module 015", "Module 017", "Module 018", "Module 021"]
-
 fn module_func(
     name: &Ident,
-    //shared_resources_tick:bool, not used for now.
+    has_shared_resources:bool,
+    shared_resources_tick:bool,
     has_local_resources:bool,
     local_resources_tick:bool, 
     app: &App, 
@@ -183,11 +189,21 @@ fn module_func(
     let task_cfgs: Vec<Attribute> = vec![];
 
     // Module 005
-    //should be together with call to local_resources_struct.
+    // could be together with call to local_resources_struct, maybe...
     let mut lt = None;
     if has_local_resources{
         let (module_item, field, value, lt_return) 
             = local_resources::codegen_module(name,local_resources_tick);
+        module_items.push(module_item);
+        fields.push(field);
+        values.push(value);
+        lt = lt_return;
+    }
+
+    // Module 006
+    if has_shared_resources{
+        let (module_item, field, value, lt_return) 
+            = shared_resources::codegen_module(name,shared_resources_tick);
         module_items.push(module_item);
         fields.push(field);
         values.push(value);
@@ -206,6 +222,8 @@ fn module_func(
 
     // Module 017
     let priority = quote!(priority: &#lt rtic::export::Priority);
+
+    
     
     // Module 018
     let internal_context_name = Ident::new(&format!("__rtic_idle_{}_context", name), Span::call_site());
