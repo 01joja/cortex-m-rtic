@@ -41,6 +41,8 @@ pub fn abstract_syntax_tree(
 
     write_to_file("contents/app/user_imports_print.rs", format!("{:#?}",app.user_imports));
 
+    write_to_file("contents/app/task_modules_print.rs", format!("{:#?}",app.task_modules));
+
     //Extra
     //fs::write("contents/extra_print.rs", format!("{:#?}",extra))?;
 

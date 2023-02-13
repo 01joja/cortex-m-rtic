@@ -63,7 +63,7 @@ pub fn codegen(
 
         // Used to be able to access all tasks with the same dispatcher
         let mut match_spawn_software_task = vec![];
-        let mut dispatcher_tasks = vec![];
+        let mut dispatcher_tasks_access = vec![];
         let dispatcher_tasks_name = sw_names::dispatcher_variable(&format!("for_priority_{priority}"));
         
         // Request queue holds the order of requested task. So they
@@ -72,6 +72,7 @@ pub fn codegen(
 
         let mut local_resources = vec![];
         let mut shared_resources = vec![];
+        let mut contexts = vec![];
 
         // Capacity for the dispatcher queue.
         // Needs to be the capacity of all capacity of all tasks
@@ -84,14 +85,15 @@ pub fn codegen(
 
             // The dispatcher needs to be able to access all tasks of it's
             // priority.
-            dispatcher_tasks.push(quote!(#name,));
+            dispatcher_tasks_access.push(quote!(#name,));
 
             // See tasks.rs
             let (allocate_software_task_queue,
                 bind_spawn_to_software_task,
                 software_task,
                 task_local_resources,
-                task_shared_resources) = 
+                task_shared_resources,
+                task_context) = 
                     software_tasks::generate_software_task(
                         name,
                         task,
@@ -99,18 +101,22 @@ pub fn codegen(
                         &dispatcher_tasks_name,
                         &dispatcher_request_queue,
                         device,
-                        interrupt
+                        interrupt,
                     );
 
             init_tasks.push(allocate_software_task_queue);
             match_spawn_software_task.push(bind_spawn_to_software_task);
             software_tasks.push(software_task);
-            local_resources.push(task_local_resources);
+
+            //No local resource is used by two tasks.
+            local_resources.extend(task_local_resources);
+            //Shared resources should be used by two tasks.
             for resource in task_shared_resources{
                 if !shared_resources.contains(&resource){
                     shared_resources.push(resource);
                 }
             }
+            contexts.extend(task_context);
         }
 
         
@@ -162,12 +168,15 @@ pub fn codegen(
                 }
             }
 
+            /// Context needed to pass local and shared resources to their respective task.
+            #(#contexts)*
+
             /// All software tasks belonging to prio X
             #[allow(non_snake_case)]
             #[allow(non_camel_case_types)]
             #[doc(hidden)]
             pub enum #dispatcher_tasks_name {
-                #(#dispatcher_tasks)*
+                #(#dispatcher_tasks_access)*
             }
 
             /// Implements rtic clone
@@ -197,20 +206,24 @@ pub fn codegen(
 
     }
 
-    if dispatchers.len() == 0{
-        dispatchers.push(quote!());
-    }
-    if software_tasks.len() == 0{
-        software_tasks.push(quote!());
-    }
+    let init_software;
 
-    let init_software = quote!{
-        fn init_software(){
-            unsafe{
-                #(#init_tasks)*
+    // There are no software tasks hence no code needs to be generated
+    if software_tasks.len() == 0{
+        dispatchers.push(quote!());
+        software_tasks.push(quote!());
+        init_software = quote!();
+    }
+    else
+    {
+        init_software = quote!{
+            fn init_software(){
+                unsafe{
+                    #(#init_tasks)*
+                }
             }
-        }
-    };
+        };
+    }
 
     (dispatchers, software_tasks, init_software)
 }

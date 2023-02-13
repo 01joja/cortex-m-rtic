@@ -22,6 +22,7 @@ use syn::{Ident, LitInt, Path};
 /// - Allocates the software task queue during init
 /// - Match statement to current software_task in the dispatcher.
 /// - Software task and the overhead.
+/// - "Context", a struct that mimics context in hardware task step (feels like a hack). 
 pub fn generate_software_task(
     name: &Ident, 
     task: &SoftwareTask,
@@ -38,9 +39,10 @@ pub fn generate_software_task(
     // the software task and overhead.
     TokenStream2,
     // local resources,
-    TokenStream2,
+    Vec<TokenStream2>,
     // shared resources,
-    Vec<String>
+    Vec<String>,
+    Vec<TokenStream2>,
     ){
     let attrs = &task.attrs;
     let cfgs = &task.cfgs;
@@ -59,20 +61,35 @@ pub fn generate_software_task(
         });
     };
 
-    let mut local_resources = quote!();
-    // Don't know what and how external works. So just throws it away.
-    for (local_resource, _external) in &task.args.local_resources{
-        local_resources = quote!(#local_resource);
+    let mut local_resources_struct = vec![];
+    let mut local_resources = vec!();
+    // Don't know what and how external works. So just throws it away for now.
+    for (local_resource, external) in &task.args.local_resources{
+        let r_type;
+        match external {
+            rtic_syntax::ast::TaskLocal::External => todo!(),
+            rtic_syntax::ast::TaskLocal::Declared(local) => {
+                r_type = &local.ty;
+            },
+            _ => todo!(),
+        }
+
+        local_resources.push(quote!(#local_resource));
+        local_resources_struct.push(quote!(pub #local_resource: &'a mut #r_type));
     }
 
+    let mut local_resources_struct = vec![];
     let mut shared_resources = vec![];
     // Need to look in to access. Is it &mut and &? 
     for (shared_resource, _access) in &task.args.shared_resources{
         shared_resources.push(shared_resource.to_string().clone());
+        local_resources_struct.push(quote!(pub shared_resource: ));
     }
 
+
+
     // function inputs (context, message passing etcetera)
-    let context = &task.context;
+    let context_user_name = &task.context;
     let mut task_messages: Vec<TokenStream2> = vec![];
     let mut task_messages_internal: Vec<TokenStream2> = vec![];
     let mut task_messages_names: Vec<TokenStream2> = vec![];
@@ -102,7 +119,6 @@ pub fn generate_software_task(
                 .split()
                 .0
                 .enqueue_unchecked(index);
-            let priority = &rtic::export::Priority::new(PRIORITY);
             #name(context,#(#task_messages_names)*)
         }
     };
@@ -114,7 +130,7 @@ pub fn generate_software_task(
         #(#attrs)*
         #(#cfgs)*
         #[allow(non_snake_case)]
-        fn #name(#context: #dispatcher_name::Context, #(#task_messages)*){
+        fn #name(#context_user_name: #dispatcher_name::Context, #(#task_messages)*){
             use rtic::Mutex as _;
             use rtic::mutex::prelude::*;
             #(#stmts)*
@@ -207,12 +223,14 @@ pub fn generate_software_task(
         #task_overhead
     };
 
+    let special_context = vec![quote!()];
 
     return (
         allocate_software_task_queue,
         bind_spawn_to_software_task,
         software_task,
         local_resources,
-        shared_resources
+        shared_resources,
+        special_context,
     );
 }

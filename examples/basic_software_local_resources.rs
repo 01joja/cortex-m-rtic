@@ -7,13 +7,14 @@
 
 use panic_semihosting as _;
 
-#[rtic::app(device = lm3s6965)]
+#[rtic::app(device = lm3s6965, dispatchers = [UART0], compiler_passes = ["software","hardware"])]
 mod app {
     use cortex_m_semihosting::{debug, hprintln};
-    use lm3s6965::Interrupt;
 
     #[shared]
-    struct Shared {}
+    struct Shared {
+        test: i64,
+    }
 
     #[local]
     struct Local {
@@ -25,11 +26,13 @@ mod app {
     // `#[init]` cannot access locals from the `#[local]` struct as they are initialized here.
     #[init]
     fn init(_: init::Context) -> (Shared, Local, init::Monotonics) {
-        rtic::pend(Interrupt::UART0);
-        rtic::pend(Interrupt::UART1);
+        foo::spawn().unwrap();
+        bar::spawn().unwrap();
 
         (
-            Shared {},
+            Shared {
+                test: 0,
+            },
             // initial values for the `#[local]` resources
             Local {
                 local_to_foo: 0,
@@ -62,7 +65,7 @@ mod app {
     }
 
     // `local_to_foo` can only be accessed from this context
-    #[task(binds = UART0, local = [local_to_foo])]
+    #[task(local = [local_to_foo,])]
     fn foo(cx: foo::Context) {
         let local_to_foo = cx.local.local_to_foo;
         *local_to_foo += 1;
@@ -74,9 +77,9 @@ mod app {
     }
 
     // `local_to_bar` can only be accessed from this context
-    #[task(binds = UART1, local = [local_to_bar])]
+    #[task( local = [local_to_bar])]
     fn bar(cx: bar::Context) {
-        rtic::pend(Interrupt::UART0);
+        foo::spawn().unwrap();
         let local_to_bar = cx.local.local_to_bar;
         *local_to_bar += 1;
 

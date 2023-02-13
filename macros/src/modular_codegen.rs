@@ -26,9 +26,14 @@ use rtic_syntax::P;
 use crate::analyze;
 use crate::check;
 
-mod software_tasks_pass;
 mod print;
+mod generate_syntax;
+
+//Passes
+mod software_tasks_pass;
 mod hardware;
+mod monotonic_pass;
+mod resources_pass;
 
 //use syn::{Attribute, Ident, LitInt, PatType};
 
@@ -71,8 +76,10 @@ pub fn app(
     let mut passes = app.args.passes.clone();
 
     // adds a standard passes if standard is given.
-    if passes[0] == "standard"{
-        passes = vec!["software".to_string(),"hardware".to_string()]
+    if passes[0].to_string() == "standard"{
+        passes = 
+            vec![generate_syntax::ident("software"),
+            generate_syntax::ident("hardware")]
     }
 
     // reverses the passes
@@ -106,7 +113,15 @@ pub fn app(
         }
 
         // add different passes here:
-        match pass.as_str(){
+        match pass{
+            "monotonics" =>{
+                
+            }
+            
+            "monotonics" =>{
+                
+            }
+
             "software" => {
                 (generated_arguments, generated_code) 
                     = software_tasks_pass::codegen(&app,&extra);
