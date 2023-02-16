@@ -10,8 +10,8 @@ use quote::quote;
 use proc_macro2::{
     Span, 
     TokenStream as TokenStream2};
-//use proc_macro::TokenStream;
-//use quote::quote;
+// use proc_macro::TokenStream;
+// use quote::quote;
 use rtic_syntax::ast::App;
 
 use std::io::{Error, ErrorKind};
@@ -29,13 +29,15 @@ use crate::check;
 mod print;
 mod generate_syntax;
 
-//Passes
+// Passes
 mod software_tasks_pass;
 mod hardware;
 mod monotonic_pass;
 mod resources_pass;
+mod recreate_feature;
+mod tokens;
 
-//use syn::{Attribute, Ident, LitInt, PatType};
+// use syn::{Attribute, Ident, LitInt, PatType};
 
 use crate::{analyze::Analysis, check::Extra};
 
@@ -76,10 +78,10 @@ pub fn app(
     let mut passes = app.args.passes.clone();
 
     // adds a standard passes if standard is given.
-    if passes[0].to_string() == "standard"{
+    if passes[0].as_str() == "standard"{
         passes = 
-            vec![generate_syntax::ident("software"),
-            generate_syntax::ident("hardware")]
+            vec!["software".to_string(),
+            "hardware".to_string()]
     }
 
     // reverses the passes
@@ -112,27 +114,33 @@ pub fn app(
             };
         }
 
+
         // add different passes here:
-        match pass{
+        match pass.as_str() {
             "monotonics" =>{
-                
+                (generated_arguments, generated_code) 
+                    = monotonic_pass::codegen(&app, &extra);
             }
             
-            "monotonics" =>{
-                
+            "resources" =>{
+                    
+                (generated_arguments, generated_code) 
+                = resources_pass::codegen(&app,&extra);
             }
 
             "software" => {
                 (generated_arguments, generated_code) 
                     = software_tasks_pass::codegen(&app,&extra);
             }
+
             "hardware" => {
-                (generated_arguments, generated_code)  = hardware::codegen(&app,&analysis,&extra);
+                (generated_arguments, generated_code)  
+                    = hardware::codegen(&app,&analysis,&extra);
             }
+            
             unknown_pass => {
-                //TODO, behave as other compiling errors. Don't know how yet.
-                let error = create_unknown_pass_error(unknown_pass);
-                panic!("{}",error);
+                unimplemented!("Pass {} is not implemented. Make sure you have spelled it correctly or
+                try: \n compile_passes = [standard] to get the normal chain", unknown_pass)
             }
         }
     }
@@ -167,9 +175,3 @@ fn call_parse(arguments: TokenStream, code: TokenStream) ->
     Ok((app, analysis, extra))
 }
 
-/// creates error text for unkonwn_pass.
-fn create_unknown_pass_error(error: &str) -> String{
-    let part1 = format!("Pass \"{}\" is not known. Try \"compiler_passes = [\"standard\"]\"",error);
-    let part2 = format!("\nto get the usual passes or look at the documentation in rtic.rs to see examples");
-    return format!("{}{}",part1,part2)
-}

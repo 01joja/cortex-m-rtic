@@ -12,12 +12,14 @@ use crate::{analyze::Analysis, check::Extra};
 
 use super::hardware;
 
+use super::recreate_feature;
+
+
 use crate::codegen::util;
 
 mod dispatchers;
 mod software_tasks;
 mod sw_names;
-
 
 pub fn codegen(
     app: &App, 
@@ -32,29 +34,26 @@ pub fn codegen(
     // software tasks.
     TokenStream2) {
 
+    //    let priority = util::priority_literal(&task.args.priority);
     // Untouched in software.
     let name = &app.name;
-    let device = &extra.device;
     let user_imports = &app.user_imports;
     let user_code = &app.user_code;
 
+    // recreates features for later passes 
+    let user_init = recreate_feature::init(app);
+    let user_idle = recreate_feature::idle(app);
+    let hardware_tasks = recreate_feature::hardware(app);
+    let resources = recreate_feature::resources_structs(app);
+    
     let (dispatchers, 
         software_tasks, 
         init_software) = dispatchers::codegen(app, extra);
 
-    let user_init = codegen_init(app);
-
-    // user_idle, hardware_tasks and resources are untouched
-    let user_idle = codegen_idle(app);
-    let hardware_tasks = codegen_hardware(app);
-    let resources = codegen_resources(app);
+    
     
     // creates the argument used in the rtic parser
-    let argument = quote!(
-        // This is equal to the rtic macro:
-        // #[rtic::app(device = #device)]
-        device = #device
-    );
+    let argument = recreate_feature::argument(extra);
 
     let code = quote!(
         mod #name{
@@ -72,9 +71,6 @@ pub fn codegen(
             /// #user_init
             #user_init
 
-            /// #init_software
-            #init_software
-
             /// #user_idle
             #user_idle
 
@@ -86,6 +82,12 @@ pub fn codegen(
 
             /// #resources
             #resources
+
+
+            #[__rtic_main]
+            fn __rtic_main(){
+                #init_software
+            }
         }
     );
 
@@ -94,158 +96,4 @@ pub fn codegen(
 
 
 
-/// Adds a call to software_init() if there are any software tasks. 
-fn codegen_init(app:&App) -> TokenStream2{
-    let init = &app.init;
-    let name = &init.name;
-    let context = &init.context;
-    let attrs = &init.attrs;
-    let stmts = &init.stmts;
-    let shared = &init.user_shared_struct;
-    let local = &init.user_local_struct;
-
-    let user_init_return = quote! {#shared, #local, #name::Monotonics};
-
-    // Software tasks needs to be initialized before anything else happens.
-    let init_software_call; 
-    if app.software_tasks.is_empty(){
-        init_software_call = quote!();
-    }else{
-        init_software_call = quote!(init_software(););
-    };
-
-
-    quote!(
-        #(#attrs)*
-        #[init]
-        fn #name(#context: #name::Context) -> (#user_init_return) {
-            /// From software tasks
-            #init_software_call
-            #(#stmts)*
-        }
-    )
-}
-
-/// Recreates the idle task so they can be parsed again
-fn codegen_idle(app:&App) -> Option<TokenStream2>{
-
-    if let Some(idle) = &app.idle{
-        let name = &idle.name;
-        let attrs = &idle.attrs;
-        let context = &idle.context;
-        let stmts = &idle.stmts;
-
-        let resources = generate_resource(
-            &idle.args.local_resources,
-            &idle.args.shared_resources,
-        );
-
-        println!("{:?}",resources);
-
-        Some(quote!(
-            #(#attrs)*
-            #[allow(non_snake_case)]
-            #[idle(#(#resources)*)]
-            //#[idle]
-            fn #name(#context: #name::Context) -> ! {
-                #(#stmts)*
-            }
-        ))
-    }else{
-        None
-    }
-
-    
-}
-
-/// Recreates the hardware tasks so they can be parsed again
-/// #[task(binds = <>, priority = <>, local_resources = vec<>, local_resources = vec<>)]
-fn codegen_hardware(app: &App) -> Vec<TokenStream2>{
-    
-    let mut hw_tasks = vec![];
-    
-    for (name, task) in &app.hardware_tasks{
-
-        let attrs = &task.attrs;
-        let binds = &task.args.binds;
-        let context = &task.context;
-        let stmts = &task.stmts;
-
-        // Transforms suffix literal to unsuffixed literal
-        // and can there for be put as a priority value 
-        let priority = util::priority_literal(&task.args.priority);
-
-        let resources = generate_resource(
-            &task.args.local_resources,
-            &task.args.shared_resources,
-        );
-
-        hw_tasks.push(quote!{
-
-            #(#attrs)*
-            #[task(binds = #binds, priority = #priority, #(#resources)*)]
-            fn #name(#context: #name::Context) {
-                #(#stmts)*
-            }
-
-        });
-    }
-
-
-    hw_tasks
-}
-
-/// Recreates the resources so they can be parsed again
-fn codegen_resources(app: &App) -> TokenStream2 {
-
-    let mut local = vec![];
-
-    for (name, local_r) in &app.local_resources{
-        let ty = &local_r.ty;
-        local.push(quote!(#name: #ty,))
-    }
-
-    let mut shared = vec![];
-
-    for (name, shared_r) in &app.shared_resources{
-        let ty = &shared_r.ty;
-        shared.push(quote!(#name: #ty,))
-    }
-
-
-    quote!(
-        #[local]
-        struct Local{#(#local)*}
-
-
-        #[shared]
-        struct Shared{#(#shared)*}
-    )
-}
-
-/// generates resource attributes so that no resources is lost
-fn generate_resource(
-    local_resources: &LocalResources,
-    shared_resources: &SharedResources
-) -> Vec<TokenStream2>{
-    let mut resource = vec![];
-    if !local_resources.is_empty(){
-        let mut locals = vec![];
-        for local in local_resources{
-            let ident = local.0;
-            locals.push(quote!(#ident, ))
-        }
-        resource.push(quote!(local = [#(#locals)*]));
-    }
-    if !shared_resources.is_empty(){
-        let mut shareds = vec![];
-        for local in shared_resources{
-            let ident = local.0;
-            shareds.push(quote!(#ident, ))
-        }
-        resource.push(quote!(shared = [#(#shareds)*]));
-    }
-    resource
-
-}
 

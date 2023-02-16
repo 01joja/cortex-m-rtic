@@ -89,7 +89,7 @@ pub fn generate_software_task(
 
 
     // function inputs (context, message passing etcetera)
-    let context_user_name = &task.context;
+    let function_context = &task.context;
     let mut task_messages: Vec<TokenStream2> = vec![];
     let mut task_messages_internal: Vec<TokenStream2> = vec![];
     let mut task_messages_names: Vec<TokenStream2> = vec![];
@@ -119,7 +119,8 @@ pub fn generate_software_task(
                 .split()
                 .0
                 .enqueue_unchecked(index);
-            #name(context,#(#task_messages_names)*)
+            let priority = &rtic::export::Priority::new(PRIORITY);
+            #name(#name::Context::new(priority), #(#task_messages_names)*)
         }
     };
 
@@ -130,7 +131,7 @@ pub fn generate_software_task(
         #(#attrs)*
         #(#cfgs)*
         #[allow(non_snake_case)]
-        fn #name(#context_user_name: #dispatcher_name::Context, #(#task_messages)*){
+        fn #name(#function_context: #name::Context, #(#task_messages)*){
             use rtic::Mutex as _;
             use rtic::mutex::prelude::*;
             #(#stmts)*
@@ -138,7 +139,7 @@ pub fn generate_software_task(
     };
 
     
-
+    let context = sw_names::task_variable(name, "context");
     let spawn_name = sw_names::task_variable(name,"spawn");
     
     let capacity = task.args.capacity as usize;
@@ -177,7 +178,7 @@ pub fn generate_software_task(
 
         /// Binds internal task overhead to the user defined task.
         pub mod #name {
-            // pub use super::#context as Context;
+            pub use super::#context as Context;
             pub use super::#spawn_name as spawn;
         }
 
@@ -190,6 +191,15 @@ pub fn generate_software_task(
             [core::mem::MaybeUninit<(#(#task_messages_types)*)>; #capacity_literal],> = rtic::RacyCell::new([
             #(#vec_of_maybe_unit)*
         ]);
+
+        /// internal task context (only priority for now)
+        pub struct #context {}
+        impl #context{
+            #[inline(always)]
+            pub unsafe fn new(priority: &rtic::export::Priority) -> Self{
+                #context {}
+            }
+        }
 
         /// internal spawn function for task
         pub fn #spawn_name(#(#task_messages_internal)*) -> Result<(),(#(#task_messages_types)*)>{

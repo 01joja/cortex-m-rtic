@@ -217,11 +217,7 @@ pub fn codegen(
     else
     {
         init_software = quote!{
-            fn init_software(){
-                unsafe{
-                    #(#init_tasks)*
-                }
-            }
+            #(#init_tasks)*
         };
     }
 

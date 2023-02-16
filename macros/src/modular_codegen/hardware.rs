@@ -65,6 +65,21 @@ pub fn codegen(
         shared_resources::codegen(app, analysis, extra);
     let (mod_app_local_resources, mod_local_resources) =
         local_resources::codegen(app, analysis, extra);
+    
+
+    
+    let passes_init = &app.main_fn;
+
+    let mut modules = vec![]; 
+    for (i,t) in &app.task_modules{
+        let items = &t.items;
+        let module = quote!{
+            pub mod #i{
+                #(#items)*
+            }
+        };
+        modules.push(module);
+    }
 
     let main_name = util::suffixed("main");
     main.push(quote!(
@@ -75,9 +90,11 @@ pub fn codegen(
             unsafe extern "C" fn #main_name() -> ! {
                 #(#assertion_stmts)*
 
-                #main_init
+                #(#passes_init)*
 
-                #call_idle
+                #main_init 
+
+                #call_idle 
             }
         }
     ));
@@ -134,6 +151,8 @@ pub fn codegen(
 
             /// #mod_app_hardware_tasks
             #(#mod_app_hardware_tasks)*
+
+            #(#modules)*
 
             /// #main
             #(#main)*
