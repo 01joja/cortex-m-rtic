@@ -144,13 +144,13 @@ pub fn codegen(
         // The dispatcher is expressed as a hardware task that runs the
         // different software tasks of same prio as functions.
         dispatchers.push(quote!(
-            /// The real dispatcher
             #[task(binds = #interrupt, priority = #priority_lit, #resources)]
-            fn #dispatcher_name(context: #dispatcher_name::Context){
-                #dispatcher_name_unsafe(context);
+            fn #dispatcher_name(_: #dispatcher_name::Context){
+                #dispatcher_name_unsafe();
             }
-
-            fn #dispatcher_name_unsafe(context: #dispatcher_name::Context){
+            
+            /// The real dispatcher
+            fn #dispatcher_name_unsafe(){
                 unsafe{
                     const PRIORITY: u8 = #priority;
                     rtic::export::run(

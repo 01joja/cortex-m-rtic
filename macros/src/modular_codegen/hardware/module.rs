@@ -110,7 +110,9 @@ pub fn codegen_original(
             pub local: #name::LocalResources<#lt>
         ));
 
-        values.push(quote!(local: #name::LocalResources::new()));
+        values.push(quote!(
+            local: #name::LocalResources::new()
+        ));
     }
 
     if ctxt.has_shared_resources(app) {

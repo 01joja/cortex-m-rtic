@@ -14,8 +14,6 @@ mod assertions;
 mod hardware_tasks;
 mod idle;
 mod init;
-mod local_resources_struct;
-mod local_resources;
 mod module;
 mod shared_resources_struct;
 mod shared_resources;
@@ -61,10 +59,10 @@ pub fn codegen(
         ) = idle::codegen(app, analysis, extra);
     
     //Feels like these are called from all modules...
-    let (mod_app_shared_resources, mod_shared_resources) =
-        shared_resources::codegen(app, analysis, extra);
-    let (mod_app_local_resources, mod_local_resources) =
-        local_resources::codegen(app, analysis, extra);
+    // let (mod_app_shared_resources, mod_shared_resources) =
+    //     shared_resources::codegen(app, analysis, extra);
+    // let (mod_app_local_resources, mod_local_resources) =
+    //     local_resources::codegen(app, analysis, extra);
     
 
     
@@ -128,11 +126,11 @@ pub fn codegen(
             /// #root_idle
             #(#root_idle)*
 
-            /// #mod_shared_resources
-            #mod_shared_resources
+            // /// #mod_shared_resources
+            // #mod_shared_resources
 
-            /// #mod_local_resources
-            #mod_local_resources
+            // /// #mod_local_resources
+            // #mod_local_resources
 
             /// #root_hardware_tasks
             #(#root_hardware_tasks)*
@@ -143,11 +141,11 @@ pub fn codegen(
             /// #mod_app_idle
             #(#mod_app_idle)*
 
-            /// #mod_app_shared_resources
-            #(#mod_app_shared_resources)*
+            // /// #mod_app_shared_resources
+            // #(#mod_app_shared_resources)*
 
-            /// #mod_app_local_resources
-            #(#mod_app_local_resources)*
+            // /// #mod_app_local_resources
+            // #(#mod_app_local_resources)*
 
             /// #mod_app_hardware_tasks
             #(#mod_app_hardware_tasks)*

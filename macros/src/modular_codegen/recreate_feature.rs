@@ -7,18 +7,31 @@ use rtic_syntax::ast::{App, SharedResources, LocalResources};
 use crate::check::Extra;
 use super::tokens;
 
-// recreates the argument created from the macro:
-// #[rtic::app(device = #device, ...)]
-pub fn argument(extra: &Extra) -> TokenStream2{    
+/// recreates the argument created from the macro:
+/// 
+/// #[rtic::app(device = lm3s6965, dispatchers = ...)]
+pub fn argument(app: &App, extra: &Extra) -> TokenStream2{    
     let device = &extra.device;
+    
+    // extracts 
+    let interrupts = &app.args.extern_interrupts;
+    let mut dispatchers = vec![];
+    for (ident, _) in interrupts{
+        dispatchers.push(quote!(#ident,));
+    }
+     
     quote!(
-        device = #device
+        device = #device,
+        dispatchers = [#(#dispatchers)*]
     )
 }
 
 /// Recreates the hardware tasks
-/// #[task(binds = <>, priority = <>, local_resources = vec<>, local_resources = vec<>)]
-pub fn hardware(app: &App) -> Vec<TokenStream2>{
+/// 
+/// #[task(binds = <>, priority = <>, local_resources = vec<>, shared_resources = vec<>)]
+/// 
+/// if skip_resources == true, it skips local_resources and shared_resources
+pub fn hardware_tasks(app: &App, skip_resources: bool) -> Vec<TokenStream2>{
     
     let mut hw_tasks = vec![];
     
@@ -34,10 +47,11 @@ pub fn hardware(app: &App) -> Vec<TokenStream2>{
         // and can there for be put as a priority value 
         let priority = tokens::literal_int(format!("{}",&task.args.priority));
 
-        let resources = resources(
-            &task.args.local_resources,
-            &task.args.shared_resources,
-        );
+        let resources = if skip_resources {
+            vec![quote!()]
+        } else {
+            resources(&task.args.local_resources,Some(&task.args.shared_resources))
+        };
 
         hw_tasks.push(quote!{
 
@@ -52,9 +66,54 @@ pub fn hardware(app: &App) -> Vec<TokenStream2>{
     hw_tasks
 }
 
+/// Recreates the software tasks
+/// 
+/// #[task(priority = <>, local_resources = vec<>, shared_resources = vec<>)]
+/// 
+/// if skip_resources == true, it skips local_resources and shared_resources
+pub fn software_tasks(app: &App, skip_resources: bool) -> Vec<TokenStream2>{
+    
+    let mut sw_tasks = vec![];
+    
+    for (name, task) in &app.software_tasks{
+
+        let attrs = &task.attrs;
+        let context = &task.context;
+        let stmts = &task.stmts;
+
+
+        // Transforms suffix literal to unsuffixed literal
+        // and can there for be put as a priority value 
+        let priority = tokens::literal_int(format!("{}",&task.args.priority));
+        
+        let resources = if skip_resources {
+            vec![quote!()]
+        } else {
+            resources(&task.args.local_resources,Some(&task.args.shared_resources))
+        };
+
+        sw_tasks.push(quote!{
+
+            #(#attrs)*
+            #[task(priority = #priority, #(#resources)*)]
+            fn #name(#context: #name::Context) {
+                #(#stmts)*
+            }
+
+        });
+    }
+    sw_tasks
+}
+
 
 /// Recreates idle
-pub fn idle(app:&App) -> Option<TokenStream2>{
+/// 
+/// #[idle]
+/// 
+/// fn idle(cx: idle::Context){...}
+/// 
+/// if skip_resources == true, it skips local_resources and shared_resources
+pub fn idle(app:&App, skip_resources: bool) -> Option<TokenStream2>{
 
     if let Some(idle) = &app.idle{
         let name = &idle.name;
@@ -62,12 +121,11 @@ pub fn idle(app:&App) -> Option<TokenStream2>{
         let context = &idle.context;
         let stmts = &idle.stmts;
 
-        let resources = resources(
-            &idle.args.local_resources,
-            &idle.args.shared_resources,
-        );
-
-        println!("{:?}",resources);
+        let resources = if skip_resources {
+            vec![quote!()]
+        } else {
+            resources(&idle.args.local_resources,Some(&idle.args.shared_resources))
+        };
 
         Some(quote!(
             #(#attrs)*
@@ -83,7 +141,13 @@ pub fn idle(app:&App) -> Option<TokenStream2>{
 }
 
 /// Recreates init
-pub fn init(app:&App) -> TokenStream2{
+/// 
+/// #[init]
+/// 
+/// fn init(cx: init::Context){...}
+/// 
+/// if skip_resources == true, it skips local_resources and shared_resources
+pub fn init(app:&App, skip_resources: bool) -> TokenStream2{
     let init = &app.init;
     let name = &init.name;
     let context = &init.context;
@@ -94,9 +158,17 @@ pub fn init(app:&App) -> TokenStream2{
 
     let user_init_return = quote! {#shared, #local, #name::Monotonics};
 
+    
+
+    let resources = if skip_resources {
+        vec![quote!()]
+    } else {
+        resources(&init.args.local_resources,None)
+    };
+
     quote!(
         #(#attrs)*
-        #[init]
+        #[init(#(#resources)*)]
         fn #name(#context: #name::Context) -> (#user_init_return) {
             #(#stmts)*
         }
@@ -135,26 +207,37 @@ pub fn resources_structs(app: &App) -> TokenStream2 {
 /// regenerates a vec of shared and local resource for tasks, idle etcetera
 /// ex:
 /// vec! = ["local = [regenerated1,regenerated2]", "shared = [regenerated3]"]
+/// 
+/// Option<&SharedResources> is needed for init.
 fn resources(
     local_resources: &LocalResources,
-    shared_resources: &SharedResources
+    shared_resources: Option<&SharedResources>
 ) -> Vec<TokenStream2>{
     let mut resource = vec![];
+
     if !local_resources.is_empty(){
         let mut locals = vec![];
+        
         for local in local_resources{
             let ident = local.0;
             locals.push(quote!(#ident, ))
         }
+
         resource.push(quote!(local = [#(#locals)*]));
     }
-    if !shared_resources.is_empty(){
-        let mut shareds = vec![];
-        for local in shared_resources{
-            let ident = local.0;
-            shareds.push(quote!(#ident, ))
+
+
+    if let Some(shared) = shared_resources{
+        if !shared.is_empty(){
+            let mut shared_tokens = vec![];
+
+            for local in shared{
+                let ident = local.0;
+                shared_tokens.push(quote!(#ident, ))
+            }
+
+            resource.push(quote!(shared = [#(#shared_tokens)*]));
         }
-        resource.push(quote!(shared = [#(#shareds)*]));
     }
     resource
 

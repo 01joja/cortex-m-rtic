@@ -13,8 +13,6 @@ use crate::modular_codegen::{
 
 use super::{
     module,
-    local_resources_struct,
-    local_resources,
     shared_resources_struct,
     shared_resources,
 };
@@ -52,18 +50,18 @@ pub fn codegen(
         let mut shared_needs_lt = false;
         let mut local_needs_lt = false;
 
-        // `${task}Locals`
-        if !task.args.local_resources.is_empty() {
-            let (item, constructor) = local_resources_struct::codegen_original(
-                Context::HardwareTask(name),
-                &mut local_needs_lt,
-                app,
-            );
+        // // `${task}Locals`
+        // if !task.args.local_resources.is_empty() {
+        //     let (item, constructor) = local_resources_struct::codegen_original(
+        //         Context::HardwareTask(name),
+        //         &mut local_needs_lt,
+        //         app,
+        //     );
 
-            root.push(item);
+        //     root.push(item);
 
-            mod_app.push(constructor);
-        }
+        //     mod_app.push(constructor);
+        // }
         
 
         // `${task}Resources`
@@ -191,14 +189,14 @@ fn module_func(
     // Module 005
     // could be together with call to local_resources_struct, maybe...
     let mut lt = None;
-    if has_local_resources{
-        let (module_item, field, value, lt_return) 
-            = local_resources::codegen_module(name,local_resources_tick);
-        module_items.push(module_item);
-        fields.push(field);
-        values.push(value);
-        lt = lt_return;
-    }
+    // if has_local_resources{
+    //     let (module_item, field, value, lt_return) 
+    //         = local_resources::codegen_module(name,local_resources_tick);
+    //     module_items.push(module_item);
+    //     fields.push(field);
+    //     values.push(value);
+    //     lt = lt_return;
+    // }
 
     // Module 006
     if has_shared_resources{

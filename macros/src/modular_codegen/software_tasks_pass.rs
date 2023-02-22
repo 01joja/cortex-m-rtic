@@ -41,10 +41,10 @@ pub fn codegen(
     let user_code = &app.user_code;
 
     // recreates features for later passes 
-    let user_init = recreate_feature::init(app);
-    let user_idle = recreate_feature::idle(app);
-    let hardware_tasks = recreate_feature::hardware(app);
-    let resources = recreate_feature::resources_structs(app);
+    let user_init = recreate_feature::init(app, false);
+    let user_idle = recreate_feature::idle(app, false);
+    let hardware_tasks = recreate_feature::hardware_tasks(app, false);
+    let resources_structs = recreate_feature::resources_structs(app);
     
     let (dispatchers, 
         software_tasks, 
@@ -53,37 +53,27 @@ pub fn codegen(
     
     
     // creates the argument used in the rtic parser
-    let argument = recreate_feature::argument(extra);
+    let argument = recreate_argument(extra);
 
     let code = quote!(
         mod #name{
 
-
-            /// #user_imports
             #(#user_imports)*
-
-            /// #dispatchers
+            
             #(#dispatchers)*
-
-            /// #software_tasks
+            
             #(#software_tasks)*
-
-            /// #user_init
+            
             #user_init
-
-            /// #user_idle
+            
             #user_idle
-
-            /// #user_code
+            
             #(#user_code)*
-
-            /// #hardware_tasks
+            
             #(#hardware_tasks)*
-
-            /// #resources
-            #resources
-
-
+            
+            #resources_structs
+            
             #[__rtic_main]
             fn __rtic_main(){
                 #init_software
@@ -94,6 +84,15 @@ pub fn codegen(
     (argument, code)
 }
 
+/// Removes dispatcher/external interrupts from
+/// argument so they don't cause issues later in
+/// the pipeline.
+pub fn recreate_argument(extra: &Extra) -> TokenStream2{    
+    let device = &extra.device;
 
+    quote!(
+        device = #device,
+    )
+}
 
 

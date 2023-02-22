@@ -11,10 +11,8 @@ use syn::{Attribute, Ident};
 
 
 use super::{
-    local_resources_struct, 
     module, 
     shared_resources_struct, 
-    local_resources
 };
 
 /// Generates support code for `#[idle]` functions
@@ -51,14 +49,14 @@ pub fn codegen(
             mod_app.push(constructor);
         }
 
-        if !idle.args.local_resources.is_empty() {
-            let (item, constructor) =
-                local_resources_struct::codegen_original(Context::Idle, &mut local_needs_lt, app);
+        // if !idle.args.local_resources.is_empty() {
+        //     let (item, constructor) =
+        //         local_resources_struct::codegen_original(Context::Idle, &mut local_needs_lt, app);
 
-            root_idle.push(item);
+        //     root_idle.push(item);
 
-            mod_app.push(constructor);
-        }
+        //     mod_app.push(constructor);
+        // }
 
         module::codegen_original(
             "idle",
@@ -86,15 +84,15 @@ pub fn codegen(
         let task_cfgs: Vec<TokenStream2> = vec![];
         
         let mut lt = None;
-        if !idle.args.local_resources.is_empty(){
-            println!("ja,jo jag körs allt");
-            let (module_item, field, value, lt_return) 
-                = local_resources::codegen_module(name,local_needs_lt);
-            module_items.push(module_item);
-            fields.push(field);
-            values.push(value);
-            lt = lt_return;
-        }
+        // if !idle.args.local_resources.is_empty(){
+        //     println!("ja,jo jag körs allt");
+        //     let (module_item, field, value, lt_return) 
+        //         = local_resources::codegen_module(name,local_needs_lt);
+        //     module_items.push(module_item);
+        //     fields.push(field);
+        //     values.push(value);
+        //     lt = lt_return;
+        // }
 
         let doc = "idle loop";
         let core:Option<TokenStream2> = None;

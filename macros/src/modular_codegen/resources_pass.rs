@@ -17,9 +17,18 @@ use super::recreate_feature;
 
 use crate::codegen::util;
 
+mod local_resources_struct;
+mod local_resources;
+mod shared_resources_struct;
+mod shared_resources;
+mod r_names;
+mod resources;
+mod context;
+
 pub fn codegen(
-    app: &App, 
-    extra: &Extra
+    app: &App,
+    analysis: &Analysis,
+    extra: &Extra,
 ) -> (
     // Returns the argument needed for rtic_syntax::parse()
     TokenStream2,
@@ -37,55 +46,46 @@ pub fn codegen(
     let user_code = &app.user_code;
 
     // recreates features for later passes 
-    let user_init = recreate_feature::init(app);
-    let user_idle = recreate_feature::idle(app);
-    let hardware_tasks = recreate_feature::hardware(app);
-    let resources = recreate_feature::resources_structs(app);
-    
-    let (dispatchers, 
-        software_tasks, 
-        init_software) = (quote!(),quote!(),quote!());
+    let user_init = recreate_feature::init(app, true);
+    let user_idle = recreate_feature::idle(app, true);
+    let hardware_tasks = recreate_feature::hardware_tasks(app, true);
+    let software_tasks = recreate_feature::software_tasks(app, true);
+    let resources_user_structs = recreate_feature::resources_structs(app);
 
-    
     
     // creates the argument used in the rtic parser
-    let argument = recreate_feature::argument(extra);
+    let argument = recreate_feature::argument(app, extra);
 
-    let code = quote!(
+    let (contexts, structs,) = resources::codegen(app, analysis, extra);
+
+    let code = quote!{
         mod #name{
 
+            //#(#local_resources)*
 
-            /// #user_imports
+            #(#contexts)*
+
+            #(#structs)*
+
+            #resources_user_structs
+            
             #(#user_imports)*
-
-            /// #dispatchers
-            #dispatchers
-
-            /// #software_tasks
-            #software_tasks
-
-            /// #user_init
+            
             #user_init
-
-            /// #user_idle
+            
             #user_idle
-
-            /// #user_code
+            
             #(#user_code)*
-
-            /// #hardware_tasks
+            
             #(#hardware_tasks)*
 
-            /// #resources
-            #resources
-
+            #(#software_tasks)*
 
             #[__rtic_main]
             fn __rtic_main(){
-                #init_software
             }
         }
-    );
+    };
 
     (argument, code)
 }

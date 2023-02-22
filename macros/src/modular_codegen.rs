@@ -1,10 +1,11 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
-
 fn print_type_of<T>(_: &T) {
     println!("{}", std::any::type_name::<T>())
 }
+
+
 
 use quote::quote;
 use proc_macro2::{
@@ -40,6 +41,16 @@ mod tokens;
 // use syn::{Attribute, Ident, LitInt, PatType};
 
 use crate::{analyze::Analysis, check::Extra};
+
+/// The passes implemented, If you want a new one
+/// add it here and in the match statement in the
+/// loop further down
+const STANDARD_PASSES: [&'static str; 4] = [
+    "monotonics",
+    "resources",
+    "software",
+    "hardware"
+];
 
 /// #Modular RTIC
 /// 
@@ -79,9 +90,15 @@ pub fn app(
 
     // adds a standard passes if standard is given.
     if passes[0].as_str() == "standard"{
-        passes = 
-            vec!["software".to_string(),
-            "hardware".to_string()]
+        passes = vec![];
+        for pass in STANDARD_PASSES{
+            passes.push(pass.to_string());
+        }
+    }else{
+        match check_and_extract_passes(app.args.passes.clone()){
+            Ok(p) => p,
+            Err(e) => return e.into(),
+        };
     }
 
     // reverses the passes
@@ -123,9 +140,8 @@ pub fn app(
             }
             
             "resources" =>{
-                    
                 (generated_arguments, generated_code) 
-                = resources_pass::codegen(&app,&extra);
+                = resources_pass::codegen(&app, &analysis, &extra);
             }
 
             "software" => {
@@ -139,8 +155,10 @@ pub fn app(
             }
             
             unknown_pass => {
-                unimplemented!("Pass {} is not implemented. Make sure you have spelled it correctly or
-                try: \n compile_passes = [standard] to get the normal chain", unknown_pass)
+                // Should be caught in "check_and_extract_passes".
+                let mut message = format!("Pass \"{}\" is not implemented in mod app in modular_codegen.\n", unknown_pass);
+                message.push_str("If you added a new one, make sure it is added to the match statement");
+                unimplemented!("{}",message)
             }
         }
     }
@@ -175,3 +193,35 @@ fn call_parse(arguments: TokenStream, code: TokenStream) ->
     Ok((app, analysis, extra))
 }
 
+//checks the passes and extracts the strings as &str
+fn check_and_extract_passes(passes: Vec<String>) -> Result<(),TokenStream>{
+    let mut last_i = 0;
+
+    for pass in passes{
+        let mut current_i = 0;
+        let mut found_pass = false;
+
+        for s_pass in STANDARD_PASSES{
+            if s_pass == pass.as_str(){
+                found_pass = true;
+                break;
+            } else {
+                current_i +=1;
+            }
+        }
+
+        if !found_pass{
+            let mut message = format!("Pass \"{pass}\" is not implemented. Make sure you have spelled it correctly or try:\n");
+            message.push_str("\"compile_passes = [standard]\" to get the standard chain");
+            let error = syn::Error::new(Span::call_site(), message).to_compile_error();
+            return Err(error.into());
+        }else if current_i < last_i {
+            let message = format!("Pass \"{pass}\" should come before \"{}\", please change the order",STANDARD_PASSES[last_i]);
+            let error = syn::Error::new(Span::call_site(), message).to_compile_error();
+            return Err(error.into());
+        }
+
+        last_i = current_i;
+    }
+    Ok(())
+}

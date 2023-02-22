@@ -3,21 +3,21 @@ use syn::{Ident};
 use quote::quote;
 use rtic_syntax::{ast::App, Context};
 
-use crate::{analyze::Analysis, check::Extra, codegen::util};
+// use crate::{analyze::Analysis, check::Extra};
+
+use super::r_names;
 
 /// Generates `local` variables and local resource proxies
 ///
 /// I.e. the `static` variables and theirs proxies.
 pub fn codegen(
     app: &App,
-    _analysis: &Analysis,
-    _extra: &Extra,
-) -> (
+) -> 
     // mod_app -- the `static` variables behind the proxies
-    Vec<TokenStream2>,
-    // mod_resources -- the `resources` module
-    TokenStream2,
-) {
+    Vec<TokenStream2>//,
+    // task_modules -- the `resources` module
+    //TokenStream2,
+ {
     let mut mod_app = vec![];
     // let mut mod_resources: _ = vec![];
 
@@ -25,7 +25,7 @@ pub fn codegen(
     for (name, res) in &app.local_resources {
         let cfgs = &res.cfgs;
         let ty = &res.ty;
-        let mangled_name = util::static_local_resource_ident(name);
+        let mangled_name = r_names::external_local_r(name);
 
         let attrs = &res.attrs;
 
@@ -34,7 +34,8 @@ pub fn codegen(
         let section = if attrs.iter().any(|attr| attr.path.is_ident("link_section")) {
             None
         } else {
-            Some(util::link_section_uninit())
+            let section = format!(".uninit.rtic_{}",name);
+            Some(quote!(#[link_section = #section]))
         };
 
         // For future use
@@ -51,6 +52,9 @@ pub fn codegen(
         ));
     }
 
+
+    // Is these the late resources?
+
     // All declared `local = [NAME: TY = EXPR]` local resources
     for (task_name, resource_name, task_local) in app.declared_local_resources() {
         let cfgs = &task_local.cfgs;
@@ -58,7 +62,8 @@ pub fn codegen(
         let expr = &task_local.expr;
         let attrs = &task_local.attrs;
 
-        let mangled_name = util::declared_static_local_resource_ident(resource_name, task_name);
+
+        let mangled_name = r_names::declared_local_r(resource_name, task_name);
 
         // For future use
         // let doc = format!(" RTIC internal: {}:{}", file!(), line!());
@@ -73,46 +78,5 @@ pub fn codegen(
         ));
     }
 
-    (mod_app, TokenStream2::new())
+    mod_app
 }
-
-
-// Represent Module 005
-pub fn codegen_module(name: &Ident, local_resources_tick:bool) ->
-    (   
-        // module_item
-        TokenStream2,
-        // field
-        TokenStream2,
-        // values
-        TokenStream2,
-        // new value of lt
-        Option<TokenStream2>
-    )
-    {
-
-    let name_indent = 
-        Ident::new(&format!("__rtic_internal_{}LocalResources", name), Span::call_site());
-    println!("name_indent {}",name_indent);
-
-    let lt = if local_resources_tick {
-        Some(quote!('a))
-    } else {
-        None
-    };
-
-    let module_item = quote!{
-        #[doc(inline)]
-        pub use super::#name_indent as LocalResources;
-    };
-    
-    let field = quote!(
-        /// Local Resources this task has access to
-        pub local: #name::LocalResources<#lt>
-    );
-
-    let value = quote!(local: #name::LocalResources::new());
-
-    (module_item, field, value, lt)
-}
-

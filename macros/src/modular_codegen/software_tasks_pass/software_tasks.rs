@@ -26,7 +26,7 @@ use syn::{Ident, LitInt, Path};
 pub fn generate_software_task(
     name: &Ident, 
     task: &SoftwareTask,
-    dispatcher_name: &Ident,
+    _dispatcher_name: &Ident,
     dispatcher_tasks_name: &Ident,
     dispatcher_queue: &Ident,
     device: &Path,
@@ -140,7 +140,7 @@ pub fn generate_software_task(
 
     
     let context = sw_names::task_variable(name, "context");
-    let spawn_name = sw_names::task_variable(name,"spawn");
+    let spawn_name = sw_names::task_variable(name, "spawn");
     
     let capacity = task.args.capacity as usize;
     // capacity literal needs to + 1 here

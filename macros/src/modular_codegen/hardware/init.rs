@@ -12,7 +12,7 @@ use crate::modular_codegen::{
 mod post_init;
 mod pre_init;
 
-use super::{module,local_resources_struct,shared_resources_struct};
+use super::{module,shared_resources_struct};
 
 use crate::codegen::util;
 
@@ -103,14 +103,14 @@ pub fn codegen(
     let mut mod_app = None;
 
     // `${task}Locals`
-    if !init.args.local_resources.is_empty() {
-        let (item, constructor) =
-            local_resources_struct::codegen_original(Context::Init, &mut local_needs_lt, app);
+    // if !init.args.local_resources.is_empty() {
+    //     let (item, constructor) =
+    //         local_resources_struct::codegen_original(Context::Init, &mut local_needs_lt, app);
 
-        root_init.push(item);
+    //     root_init.push(item);
 
-        mod_app = Some(constructor);
-    }
+    //     mod_app = Some(constructor);
+    // }
     
     let main_init = codegen_main_init(name, app, analysis, extra);
 

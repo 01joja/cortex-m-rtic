@@ -5,7 +5,7 @@ use rtic_syntax::{ast::App, Context};
 use crate::codegen::util;
 
 /// Generate shared resources structs
-pub fn codegen_original(ctxt: Context, needs_lt: &mut bool, app: &App) -> (TokenStream2, TokenStream2) {
+pub fn codegen(ctxt: Context, needs_lt: &mut bool, app: &App) -> (TokenStream2, TokenStream2) {
     let mut lt = Some(quote!('a));
 
     let resources = match ctxt {

@@ -1,11 +1,11 @@
-//Names that are used in both dispatcher.rs and software_tasks.rs
-
 
 use crate::modular_codegen::generate_syntax;
 
 use proc_macro2::{Span,TokenStream as TokenStream2};
 
-use syn::{Ident, LitInt, Path};
+use syn::Ident;
+
+// use syn::{Ident, LitInt, Path};
 
 const RTIC_DISPATCHER: &str = "__rtic_dispatcher";
 const RTIC_SOFTWARE_TASK: &str = "__rtic_sw_task";
