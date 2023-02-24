@@ -8,40 +8,116 @@ use rtic_syntax::{ast::{App, SharedResources, LocalResources}, Context};
 
 use super::r_names;
 
-/// Generates `local` variables and local resource proxies
-///
-/// I.e. the `static` variables and theirs proxies.
+
+///Generates following:
+/// - context struct
+/// - context implementation
+/// - module for task
 pub fn codegen(
-    app: &App,
-) ->
-    // modules -- the modules that holds context.
-    Vec<TokenStream2> {
-    // let mut modules = vec![];
+    name: &Ident, 
+    has_local: bool,
+    local_life_time: &bool,
+    has_shared: bool, 
+    shared_life_time: &bool,
+    init: bool,
+    ) -> TokenStream2 {
+    
+    let mut module = vec![];
+    let mut structure = vec![];
+    let mut implementation = vec![];
+    let mut life_time = None;
+    
 
-    // let has_shared = app.init.args.local_resources.len() > 0;
-    // modules.push(module(&app.init.name, false, has_shared));
+    if has_local {
+        let struct_local_name = r_names::local_r_struct(name);
+        module.push(quote!(
+            pub use super::#struct_local_name as LocalResources;
+        ));
+        if *local_life_time{
+            life_time = Some(quote!('a));
+            structure.push(quote!(
+                pub local: #name::LocalResources<'a>,
+            ));
+        }else{
+            structure.push(quote!(
+                pub local: #name::LocalResources,
+            ));
+        }
+        implementation.push(quote!(
+            local: #name::LocalResources::new(),
+        ));
+    }
 
-    // if let Some(idle) = &app.idle{
-    //     let has_local = idle.args.local_resources.len() > 0;
-    //     let has_shared = idle.args.shared_resources.len() > 0;
-    //     modules.push(module(&idle.name,has_local, has_shared));
-    // }
+    if has_shared {
+        let struct_shared_name = r_names::shared_r_struct(name);
+        module.push(quote!(
+            pub use super::#struct_shared_name as SharedResources;
+        ));
+        if *shared_life_time{
+            life_time = Some(quote!('a));
+            structure.push(quote!(
+                pub shared: #name::SharedResources<'a>,
+            ));
+        }else{
+            structure.push(quote!(
+                pub shared: #name::SharedResources,
+            ));
+        }
+        implementation.push(quote!(
+            shared: #name::SharedResources::new(),
+        ));
+    }
 
-    // for (name, task) in &app.hardware_tasks{
-    //     let has_local = task.args.local_resources.len() > 0;
-    //     let has_shared = task.args.shared_resources.len() > 0;
-    //     modules.push(module(&name, has_local, has_shared));
-    // }
 
-    // for (name, task) in &app.software_tasks{
-    //     let has_local = task.args.local_resources.len() > 0;
-    //     let has_shared = task.args.shared_resources.len() > 0;
-    //     modules.push(module(&name, has_local, has_shared));
-    // }
+    let arguments;
+    if init{
+        // init needs to have some specific things
+        // to be able to configure everything
+        life_time = Some(quote!('a));
+        structure.push(quote!{
+            /// Core (Cortex-M) peripherals
+            pub core: rtic::export::Peripherals,
+            /// Device peripherals
+            pub device: lm3s6965::Peripherals,
+            /// Critical section token for init
+            pub cs: rtic::export::CriticalSection<'a>,
+        });
+        implementation.push(quote!{
+            device: lm3s6965::Peripherals::steal(),
+            cs: rtic::export::CriticalSection::new(),
+            core,
+        });
+        arguments = quote!(core: rtic::export::Peripherals,);
+    }else{
+        arguments = quote!(priority: &#life_time rtic::export::Priority);
+    }
 
-    let mut v = vec![];
-    v
+    let context_name = r_names::context_name(name);
+
+    quote!(
+
+        #[__rtic_pass_module(has_context = true)]
+        pub mod #name{
+            pub use super::#context_name as Context;
+            #(#module)*
+        }
+
+        // #(#cfgs)*
+        #[allow(non_snake_case)]
+        #[allow(non_camel_case_types)]
+        pub struct #context_name<#life_time> {
+            #(#structure)*
+        }
+
+        // #(#cfgs)*
+        impl<#life_time> #context_name<#life_time> {
+            #[inline(always)]
+            pub unsafe fn new(#arguments) -> Self {
+                #context_name {
+                    #(#implementation)*
+                }
+            }
+        }
+    )
 }
-
-
 

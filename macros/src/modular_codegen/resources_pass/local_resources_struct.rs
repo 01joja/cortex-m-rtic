@@ -7,7 +7,6 @@ use rtic_syntax::{
 
 use super::r_names;
 
-use crate::codegen::util;
 
 /// Generates local resources structs
 pub fn codegen(task_name: &Ident, context: Context, needs_local_life_time: &mut bool, app: &App) -> (TokenStream2, TokenStream2) {
@@ -61,9 +60,9 @@ pub fn codegen(task_name: &Ident, context: Context, needs_local_life_time: &mut 
         };
 
         let mangled_name = if matches!(task_local, TaskLocal::External) {
-            util::static_local_resource_ident(name)
+            r_names::external_local_r(name)
         } else {
-            util::declared_static_local_resource_ident(name, &task_name)
+            r_names::declared_local_r(name, &task_name)
         };
 
         fields.push(quote!(

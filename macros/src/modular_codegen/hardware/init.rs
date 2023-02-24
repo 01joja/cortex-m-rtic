@@ -12,7 +12,7 @@ use crate::modular_codegen::{
 mod post_init;
 mod pre_init;
 
-use super::{module,shared_resources_struct};
+use super::{module};
 
 use crate::codegen::util;
 
@@ -22,9 +22,7 @@ pub fn codegen(
     analysis: &Analysis,
     extra: &Extra,
 ) -> (
-    // mod_app_idle -- the `${init}Resources` constructor
-    Option<TokenStream2>,
-    // root_init -- items that must be placed in the root of the crate:
+    // module_init -- items that must be placed in the root of the crate:
     // - the `${init}Locals` struct
     // - the `${init}Resources` struct
     // - the `${init}LateResources` struct
@@ -43,10 +41,10 @@ pub fn codegen(
 ) {
 
     let init = &app.init;
-    let mut local_needs_lt = false;
+    let local_needs_lt = false;
     let name = &init.name;
 
-    let mut root_init = vec![];
+    let mut module_init = vec![];
 
     let context = &init.context;
     let attrs = &init.attrs;
@@ -77,7 +75,7 @@ pub fn codegen(
             )
         }).collect();
 
-    root_init.push(quote! {
+    module_init.push(quote! {
         struct #shared {
             #(#shared_resources)*
         }
@@ -99,18 +97,6 @@ pub fn codegen(
             #(#stmts)*
         }
     );
-
-    let mut mod_app = None;
-
-    // `${task}Locals`
-    // if !init.args.local_resources.is_empty() {
-    //     let (item, constructor) =
-    //         local_resources_struct::codegen_original(Context::Init, &mut local_needs_lt, app);
-
-    //     root_init.push(item);
-
-    //     mod_app = Some(constructor);
-    // }
     
     let main_init = codegen_main_init(name, app, analysis, extra);
 
@@ -140,9 +126,9 @@ pub fn codegen(
     // let test2 = format!("{:?}", module2);
     // let hej = assert_eq!(test1,test2);
 
-    root_init.push(module2);
+    module_init.push(module2);
 
-    (mod_app, root_init, user_init, main_init)
+    (module_init, user_init, main_init)
 }
 
 
@@ -161,7 +147,14 @@ fn codegen_main_init(
 ) -> TokenStream2{
 
     let pre_init_stmts = pre_init::codegen_original(app, analysis, extra);
-    let post_init_stmts = post_init::codegen_original(app, analysis);
+    // let post_init_stmts = post_init::codegen_original(app, analysis);
+    let mut pre_init_passes_stmts = &vec![];
+    let mut post_init_stmts = &vec![];
+
+    if let Some(main_fn) = &app.main_fn{
+        pre_init_passes_stmts = &main_fn.pre_init;
+        post_init_stmts = &main_fn.post_init;
+    }
     
     
     // let locals_new = locals_new.iter();
@@ -169,19 +162,26 @@ fn codegen_main_init(
         let (shared_resources, local_resources, mut monotonics) = #name(#name::Context::new(core.into()));
     };
 
-    quote!(#(#pre_init_stmts)*
+    quote!{
+        
+        #(#pre_init_stmts)*
+        
+        #(#pre_init_passes_stmts)*
 
-    #[inline(never)]
-    fn __rtic_init_resources<F>(f: F) where F: FnOnce() {
-        f();
+        #[inline(never)]
+        fn __rtic_init_resources<F>(f: F) where F: FnOnce() {
+            f();
+        }
+
+        // Wrap late_init_stmts in a function to ensure that stack space is reclaimed.
+        __rtic_init_resources(||{
+            #call_init
+
+            #(#post_init_stmts)*
+            
+            rtic::export::interrupt::enable();
+        });
     }
-
-    // Wrap late_init_stmts in a function to ensure that stack space is reclaimed.
-    __rtic_init_resources(||{
-        #call_init
-
-        #(#post_init_stmts)*
-    });)
 }
 
 

@@ -17,7 +17,7 @@ pub fn codegen_original(
     for (name, res) in &app.shared_resources {
         let mangled_name = util::static_shared_resource_ident(name);
         // If it's live
-        let cfgs = res.cfgs.clone();
+        let cfgs = &res.cfgs;
         if analysis.shared_resources.get(name).is_some() {
             stmts.push(quote!(
                 // We include the cfgs
@@ -34,7 +34,7 @@ pub fn codegen_original(
     for (name, res) in &app.local_resources {
         let mangled_name = util::static_local_resource_ident(name);
         // If it's live
-        let cfgs = res.cfgs.clone();
+        let cfgs = &res.cfgs;
         if analysis.local_resources.get(name).is_some() {
             stmts.push(quote!(
                 // We include the cfgs

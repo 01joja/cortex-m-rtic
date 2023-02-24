@@ -24,6 +24,7 @@ mod shared_resources;
 mod r_names;
 mod resources;
 mod context;
+mod init_resources;
 
 pub fn codegen(
     app: &App,
@@ -57,6 +58,7 @@ pub fn codegen(
     let argument = recreate_feature::argument(app, extra);
 
     let (contexts, structs,) = resources::codegen(app, analysis, extra);
+    let post_init_resources = init_resources::codegen(app, analysis, extra);
 
     let code = quote!{
         mod #name{
@@ -83,6 +85,10 @@ pub fn codegen(
 
             #[__rtic_main]
             fn __rtic_main(){
+                #[__post_init]
+                fn post_init(){
+                    #(#post_init_resources)*
+                }
             }
         }
     };

@@ -70,7 +70,7 @@ pub fn app(
     user_argument: TokenStream, 
     user_code: TokenStream
 ) -> TokenStream2 {
-    
+
     let mut app;
     let mut analysis;
     let mut extra;
@@ -152,6 +152,7 @@ pub fn app(
             "hardware" => {
                 (generated_arguments, generated_code)  
                     = hardware::codegen(&app,&analysis,&extra);
+                println!("got to finishline");
             }
             
             unknown_pass => {

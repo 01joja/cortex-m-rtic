@@ -15,8 +15,6 @@ mod hardware_tasks;
 mod idle;
 mod init;
 mod module;
-mod shared_resources_struct;
-mod shared_resources;
 
 pub fn codegen(
     app: &App, 
@@ -31,6 +29,7 @@ pub fn codegen(
         panic!("the hardware pass can't handle software tasks. Try adding \"software\" to compiler_passes");
     }
     
+
     let mut main = vec![];
 
     let user_imports = &app.user_imports;
@@ -43,41 +42,47 @@ pub fn codegen(
     let assertion_stmts = assertions::codegen(app, analysis, extra);
     let (mod_app_hardware_tasks, 
         root_hardware_tasks, 
-        user_hardware_tasks) = 
-        hardware_tasks::codegen(app, analysis, extra);
-    let (
-        mod_app_init, 
-        root_init, 
+        user_hardware_tasks) 
+        = hardware_tasks::codegen(app, analysis, extra);
+    let (module_init, 
         user_init, 
-        main_init
-        ) = init::codegen(app, analysis, extra);
-    let (
-        mod_app_idle, 
-        root_idle, 
+        main_init) 
+        = init::codegen(app, analysis, extra);
+    let (mod_app_idle, 
+        module_idle, 
         user_idle, 
-        call_idle
-        ) = idle::codegen(app, analysis, extra);
-    
-    //Feels like these are called from all modules...
-    // let (mod_app_shared_resources, mod_shared_resources) =
-    //     shared_resources::codegen(app, analysis, extra);
-    // let (mod_app_local_resources, mod_local_resources) =
-    //     local_resources::codegen(app, analysis, extra);
+        call_idle) 
+        = idle::codegen(app, analysis, extra);
     
 
     
-    let passes_init = &app.main_fn;
+    let mut passes_init = None;
+    let mut rescources_init = None;
 
-    let mut modules = vec![]; 
-    for (i,t) in &app.task_modules{
-        let items = &t.items;
-        let module = quote!{
-            pub mod #i{
-                #(#items)*
-            }
-        };
-        modules.push(module);
+    
+    if true{
+        passes_init = Some(quote!());
+        rescources_init = Some(quote!());
     }
+
+    
+    // if let Some(main_fn) = &app.main_fn{
+    //     let stmts = &main_fn.stmts;
+    //     passes_init = Some(quote!(#(#stmts)*));
+    //     let rescources_init_stmts = &main_fn.resource_init;
+    //     rescources_init = Some(quote!(#(#rescources_init_stmts)*));
+    // }
+
+    // let mut modules = vec![]; 
+    // for (i,t) in &app.task_modules{
+    //     let items = &t.items;
+    //     let module = quote!{
+    //         pub mod #i{
+    //             #(#items)*
+    //         }
+    //     };
+    //     modules.push(module);
+    // }
 
     let main_name = util::suffixed("main");
     main.push(quote!(
@@ -88,7 +93,7 @@ pub fn codegen(
             unsafe extern "C" fn #main_name() -> ! {
                 #(#assertion_stmts)*
 
-                #(#passes_init)*
+                #passes_init
 
                 #main_init 
 
@@ -121,10 +126,10 @@ pub fn codegen(
             #(#user_hardware_tasks)*
             
             /// #root_init
-            #(#root_init)*
+            #(#module_init)*
 
             /// #root_idle
-            #(#root_idle)*
+            #module_idle
 
             // /// #mod_shared_resources
             // #mod_shared_resources
@@ -134,9 +139,6 @@ pub fn codegen(
 
             /// #root_hardware_tasks
             #(#root_hardware_tasks)*
-
-            /// #mod_app_init
-            #mod_app_init
 
             /// #mod_app_idle
             #(#mod_app_idle)*
@@ -150,7 +152,7 @@ pub fn codegen(
             /// #mod_app_hardware_tasks
             #(#mod_app_hardware_tasks)*
 
-            #(#modules)*
+            // #(#modules)*
 
             /// #main
             #(#main)*
