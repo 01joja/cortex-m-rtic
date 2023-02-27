@@ -26,7 +26,12 @@ pub fn codegen(
 
     for (task_name, hw_task) in &app.hardware_tasks{
         for (resource_name, task_type) in &hw_task.args.local_resources{
-            resources.push(local_init(task_type, resource_name, task_name));
+            if let TaskLocal::External = task_type{
+                let internal_name = r_names::external_local_r(resource_name);
+                quote!{
+                    #internal_name.get_mut().write(core::mem::MaybeUninit::new(local_resources.#resource_name));
+                }
+            } // else if TaskLocal::Declared, it is declared in the RacyCell directly
         }
         for (resources_name, _) in &hw_task.args.shared_resources{
             todo!("shared resources resource_pass//init_resources.rs");
@@ -59,10 +64,8 @@ fn local_init(task_type: &TaskLocal, resource_name: &Ident, task_name: &Ident) -
             }
         },
         TaskLocal::Declared(_) => {
-            let internal_name = r_names::declared_local_r(resource_name,task_name);
-            quote!{
-                #internal_name.get_mut().write(core::mem::MaybeUninit::new(local_resources.#resource_name));
-            }
+            // When it is declared it gets a value directly in to the ray cell.
+            quote!{}
         },
         _ => todo!(),
     }
