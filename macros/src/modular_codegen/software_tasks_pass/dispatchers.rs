@@ -116,7 +116,7 @@ pub fn codegen(
         // The dispatcher is expressed as a hardware task that runs the
         // different software tasks of same prio as functions.
         dispatchers.push(quote!{
-            #[allow(unsafe)]
+            #[allow(unsafe_code)]
             #[task(binds = #interrupt, priority = #priority_lit)]
             fn #dispatcher_name(_: #dispatcher_name::Context){
                 unsafe{
