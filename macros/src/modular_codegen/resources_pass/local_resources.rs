@@ -34,7 +34,7 @@ pub fn codegen(
         let section = if attrs.iter().any(|attr| attr.path.is_ident("link_section")) {
             None
         } else {
-            let section = format!(".uninit.rtic_{}",name);
+            let section = r_names::link_section(name);
             Some(quote!(#[link_section = #section]))
         };
 

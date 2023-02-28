@@ -74,10 +74,12 @@ pub fn priority_masks_ident() -> Ident {
     )
 }
 
-
-
 pub fn context_name(name: &Ident) -> Ident{
     generate_syntax::ident(
         &format!("{RTIC_CONTEXT}_{name}_context")
     )
+}
+
+pub fn link_section(name: &Ident) -> String{
+    format!(".uninit.rtic_r_{name}",)
 }

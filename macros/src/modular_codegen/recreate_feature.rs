@@ -2,7 +2,7 @@
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 
-use rtic_syntax::ast::{App, SharedResources, LocalResources};
+use rtic_syntax::ast::{App, SharedResources, LocalResources, PassModule, TaskLocal};
 
 use crate::check::Extra;
 use super::tokens;
@@ -31,9 +31,15 @@ pub fn argument(app: &App, extra: &Extra) -> TokenStream2{
 /// #[task(binds = <>, priority = <>, local_resources = vec<>, shared_resources = vec<>)]
 /// 
 /// if skip_resources == true, it skips local_resources and shared_resources
-pub fn hardware_tasks(app: &App, skip_resources: bool) -> Vec<TokenStream2>{
+pub fn hardware_tasks(app: &App, skip_resources: bool) -> (
+    // Functions
+    Vec<TokenStream2>,
+    // Modules
+    Vec<TokenStream2>
+){
     
     let mut hw_tasks = vec![];
+    let mut hw_modules = vec![];
     
     for (name, task) in &app.hardware_tasks{
 
@@ -62,8 +68,23 @@ pub fn hardware_tasks(app: &App, skip_resources: bool) -> Vec<TokenStream2>{
             }
 
         });
+
+        if let Some(module) = app.pass_modules.get(name){
+            let has_context = &module.has_context;
+            let has_monotonic = &module.has_context;
+            let items = &module.items;
+
+            hw_modules.push(quote!{
+                #[__rtic_pass_module(has_context = #has_context, has_monotonic = #has_monotonic)]
+                mod #name{
+                    #(#items)*
+                }
+
+            })
+        }
+
     }
-    hw_tasks
+    (hw_tasks,hw_modules)
 }
 
 /// Recreates the software tasks
@@ -71,9 +92,15 @@ pub fn hardware_tasks(app: &App, skip_resources: bool) -> Vec<TokenStream2>{
 /// #[task(priority = <>, local_resources = vec<>, shared_resources = vec<>)]
 /// 
 /// if skip_resources == true, it skips local_resources and shared_resources
-pub fn software_tasks(app: &App, skip_resources: bool) -> Vec<TokenStream2>{
+pub fn software_tasks(app: &App, skip_resources: bool) -> (
+    // Functions
+    Vec<TokenStream2>,
+    // Modules
+    Vec<TokenStream2>
+){
     
     let mut sw_tasks = vec![];
+    let mut sw_modules = vec![];
     
     for (name, task) in &app.software_tasks{
 
@@ -101,8 +128,23 @@ pub fn software_tasks(app: &App, skip_resources: bool) -> Vec<TokenStream2>{
             }
 
         });
+
+        if let Some(module) = app.pass_modules.get(name){
+            let has_context = &module.has_context;
+            let has_monotonic = &module.has_context;
+            let items = &module.items;
+
+            sw_modules.push(quote!{
+                #[__rtic_pass_module(has_context = #has_context, has_monotonic = #has_monotonic)]
+                mod #name{
+                    #(#items)*
+                }
+
+            })
+        }
     }
-    sw_tasks
+    
+    (sw_tasks,sw_modules)
 }
 
 
@@ -113,7 +155,12 @@ pub fn software_tasks(app: &App, skip_resources: bool) -> Vec<TokenStream2>{
 /// fn idle(cx: idle::Context){...}
 /// 
 /// if skip_resources == true, it skips local_resources and shared_resources
-pub fn idle(app:&App, skip_resources: bool) -> Option<TokenStream2>{
+pub fn idle(app:&App, skip_resources: bool) -> (
+    // function
+    Option<TokenStream2>,
+    // module
+    Option<TokenStream2>
+){  
 
     if let Some(idle) = &app.idle{
         let name = &idle.name;
@@ -127,16 +174,31 @@ pub fn idle(app:&App, skip_resources: bool) -> Option<TokenStream2>{
             resources(&idle.args.local_resources,Some(&idle.args.shared_resources))
         };
 
-        Some(quote!(
+        let idle_func = Some(quote!{
             #(#attrs)*
             #[allow(non_snake_case)]
             #[idle(#(#resources)*)]
             fn #name(#context: #name::Context) -> ! {
                 #(#stmts)*
             }
-        ))
+        });
+
+        let mut idle_module = None;
+        if let Some(module) = app.pass_modules.get(name){
+            let has_context = &module.has_context;
+            let has_monotonic = &module.has_context;
+            let items = &module.items;
+
+            idle_module = Some(quote!{
+                #[__rtic_pass_module(has_context = #has_context, has_monotonic = #has_monotonic)]
+                mod #name{
+                    #(#items)*
+                }
+            })
+        }
+        (idle_func,idle_module)
     }else{
-        None
+        (None,None)
     }  
 }
 
@@ -147,7 +209,15 @@ pub fn idle(app:&App, skip_resources: bool) -> Option<TokenStream2>{
 /// fn init(cx: init::Context){...}
 /// 
 /// if skip_resources == true, it skips local_resources and shared_resources
-pub fn init(app:&App, skip_resources: bool) -> TokenStream2{
+pub fn init(app:&App, skip_resources: bool) -> (
+    // function
+    TokenStream2,
+    // module
+    Option<TokenStream2>,
+){
+
+    
+
     let init = &app.init;
     let name = &init.name;
     let context = &init.context;
@@ -166,13 +236,30 @@ pub fn init(app:&App, skip_resources: bool) -> TokenStream2{
         resources(&init.args.local_resources,None)
     };
 
-    quote!(
+    let init_func = quote!{
         #(#attrs)*
         #[init(#(#resources)*)]
         fn #name(#context: #name::Context) -> (#user_init_return) {
             #(#stmts)*
         }
-    )
+    };
+
+    let mut init_module = None;
+    if let Some(module) = app.pass_modules.get(name){
+        let has_context = &module.has_context;
+        let has_monotonic = &module.has_context;
+        let items = &module.items;
+
+        init_module = Some(quote!{
+            #[__rtic_pass_module(has_context = #has_context, has_monotonic = #has_monotonic)]
+            mod #name{
+                #(#items)*
+            }
+
+        })
+    }
+
+    (init_func,init_module)
 }
 
 /// Recreates the resources structs
@@ -218,9 +305,21 @@ fn resources(
     if !local_resources.is_empty(){
         let mut locals = vec![];
         
-        for local in local_resources{
-            let ident = local.0;
-            locals.push(quote!(#ident, ))
+        for (ident,task_local) in local_resources{
+
+            match task_local{
+                TaskLocal::External => {
+                    locals.push(quote!(#ident, ))
+                },
+                TaskLocal::Declared(local) => {
+                    let the_type = &local.ty;
+                    let expression = &local.expr;
+                    locals.push(quote!(#ident: #the_type = #expression,)) 
+                },
+                _ => todo!(),
+            };
+
+
         }
 
         resource.push(quote!(local = [#(#locals)*]));
@@ -242,5 +341,4 @@ fn resources(
     resource
 
 }
-
 

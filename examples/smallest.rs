@@ -8,7 +8,8 @@ use rtic::app;
 
 #[app(device = lm3s6965)]
 mod app {
-    use cortex_m_semihosting::debug;
+    use cortex_m_semihosting::{debug, hprintln};
+    use lm3s6965::Interrupt;
 
     #[shared]
     struct Shared {}

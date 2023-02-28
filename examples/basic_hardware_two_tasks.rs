@@ -7,7 +7,7 @@
 
 use panic_semihosting as _;
 
-#[rtic::app(device = lm3s6965, compiler_passes = ["hardware"])]
+#[rtic::app(device = lm3s6965, compiler_passes = [software,hardware])]
 mod app {
     use cortex_m_semihosting::{debug, hprintln};
     use lm3s6965::Interrupt;
@@ -45,12 +45,8 @@ mod app {
         hprintln!("bar").unwrap();
     }
 
-    #[idle(local = [local_to_idle])]
-    fn idle(cx: idle::Context) -> ! {
-        let local_to_idle = cx.local.local_to_idle;
-        *local_to_idle += 1;
-
-        hprintln!("idle: local_to_idle = {}", local_to_idle).unwrap();
+    #[idle]
+    fn idle(_cx: idle::Context) -> ! {
 
         debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator
 

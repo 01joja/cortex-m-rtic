@@ -101,23 +101,11 @@ pub fn codegen(
             /// #root_idle
             #module_idle
 
-            // /// #mod_shared_resources
-            // #mod_shared_resources
-
-            // /// #mod_local_resources
-            // #mod_local_resources
-
             /// #root_hardware_tasks
             #(#root_hardware_tasks)*
 
             /// #mod_app_idle
             #(#mod_app_idle)*
-
-            // /// #mod_app_shared_resources
-            // #(#mod_app_shared_resources)*
-
-            // /// #mod_app_local_resources
-            // #(#mod_app_local_resources)*
 
             /// #mod_app_hardware_tasks
             #(#mod_app_hardware_tasks)*

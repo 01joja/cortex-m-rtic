@@ -56,8 +56,6 @@ pub fn codegen(
         
         // Named the dispatcher after the interrupt it was assigned. 
         let dispatcher_name = sw_names::dispatcher_variable( &interrupt.to_string());
-        let dispatcher_name_unsafe = sw_names::dispatcher_variable(&(interrupt.to_string() + "_unsafe"));
-
 
         // Used to be able to access all tasks with the same dispatcher
         let mut match_spawn_software_task = vec![];
@@ -83,6 +81,7 @@ pub fn codegen(
             // priority.
             dispatcher_tasks_access.push(quote!(#name,));
 
+
             // See tasks.rs
             let (allocate_software_task_queue,
                 bind_spawn_to_software_task,
@@ -91,7 +90,7 @@ pub fn codegen(
                     software_tasks::generate_software_task(
                         name,
                         task,
-                        &dispatcher_name,
+                        app.pass_modules.get(name),
                         &dispatcher_tasks_name,
                         &dispatcher_request_queue,
                         device,

@@ -7,7 +7,7 @@
 
 use panic_semihosting as _;
 
-#[rtic::app(device = lm3s6965)]
+#[rtic::app(device = lm3s6965, compiler_passes = [resources, hardware])]
 mod app {
     use cortex_m_semihosting::{debug, hprintln};
     use lm3s6965::Interrupt;
@@ -18,45 +18,26 @@ mod app {
     #[local]
     struct Local {
         local_to_foo: i64,
-        local_to_bar: i64,
-        local_to_idle: i64,
     }
 
     // `#[init]` cannot access locals from the `#[local]` struct as they are initialized here.
     #[init]
     fn init(_: init::Context) -> (Shared, Local, init::Monotonics) {
-        rtic::pend(Interrupt::UART0);
-        rtic::pend(Interrupt::UART1);
-
         (
             Shared {},
             // initial values for the `#[local]` resources
             Local {
-                local_to_foo: 0,
-                local_to_bar: 0,
-                local_to_idle: 0,
+                local_to_foo: 1,
             },
             init::Monotonics(),
         )
     }
 
     // `local_to_idle` can only be accessed from this context
-    #[idle(local = [local_to_idle])]
-    fn idle(cx: idle::Context) -> ! {
-        let local_to_idle = cx.local.local_to_idle;
-        *local_to_idle += 1;
-
-        hprintln!("idle: local_to_idle = {}", local_to_idle).unwrap();
-
-        debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator
-
-        // error: no `local_to_foo` field in `idle::LocalResources`
-        // _cx.local.local_to_foo += 1;
-
-        // error: no `local_to_bar` field in `idle::LocalResources`
-        // _cx.local.local_to_bar += 1;
-
+    #[idle]
+    fn idle(_: idle::Context) -> ! {
         loop {
+            rtic::pend(Interrupt::UART0);
             cortex_m::asm::nop();
         }
     }
@@ -66,23 +47,10 @@ mod app {
     fn foo(cx: foo::Context) {
         let local_to_foo = cx.local.local_to_foo;
         *local_to_foo += 1;
-
-        // error: no `local_to_bar` field in `foo::LocalResources`
-        // cx.local.local_to_bar += 1;
-
         hprintln!("foo: local_to_foo = {}", local_to_foo).unwrap();
-    }
 
-    // `local_to_bar` can only be accessed from this context
-    #[task(binds = UART1, local = [local_to_bar])]
-    fn bar(cx: bar::Context) {
-        rtic::pend(Interrupt::UART0);
-        let local_to_bar = cx.local.local_to_bar;
-        *local_to_bar += 1;
-
-        // error: no `local_to_foo` field in `bar::LocalResources`
-        // cx.local.local_to_foo += 1;
-
-        hprintln!("bar: local_to_bar = {}", local_to_bar).unwrap();
+        if local_to_foo > &mut 2{    
+            debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator
+        }
     }
 }

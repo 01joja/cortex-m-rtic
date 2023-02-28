@@ -1,7 +1,5 @@
 //! examples/hardware.rs
 
-
-
 #![deny(unsafe_code)]
 #![deny(warnings)]
 #![no_main]
@@ -9,7 +7,7 @@
 
 use panic_semihosting as _;
 
-#[rtic::app(device = lm3s6965, compiler_passes = [hardware])]
+#[rtic::app(device = lm3s6965, compiler_passes = [resources,software,hardware])]
 mod app {
     use cortex_m_semihosting::{debug, hprintln};
     use lm3s6965::Interrupt;
@@ -31,12 +29,31 @@ mod app {
         (Shared {}, Local {}, init::Monotonics())
     }
 
+    #[idle]
+    fn idle(_: idle::Context) -> ! {
+        // interrupts are enabled again; the `UART0` handler runs at this point
 
-    #[task(binds = UART0,priority = 1)]
-    fn foo(_: foo::Context) {
+        hprintln!("idle").unwrap();
 
-        hprintln!("foo").unwrap();
+        rtic::pend(Interrupt::UART0);
 
         debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator
+
+        loop {
+            cortex_m::asm::nop();
+        }
+    }
+
+    #[task(binds = UART0, local = [times: u32 = 0])]
+    fn uart0(cx: uart0::Context) {
+        // Safe access to local `static mut` variable
+        *cx.local.times += 1;
+
+        hprintln!(
+            "UART0 called {} time{}",
+            *cx.local.times,
+            if *cx.local.times > 1 { "s" } else { "" }
+        )
+        .unwrap();
     }
 }

@@ -48,10 +48,10 @@ pub fn codegen(
     let user_code = &app.user_code;
 
     // recreates features for later passes 
-    let user_init = recreate_feature::init(app, true);
-    let user_idle = recreate_feature::idle(app, true);
-    let hardware_tasks = recreate_feature::hardware_tasks(app, true);
-    let software_tasks = recreate_feature::software_tasks(app, true);
+    let (user_init,_) = recreate_feature::init(app, true);
+    let (user_idle,_) = recreate_feature::idle(app, true);
+    let (hardware_tasks, _) = recreate_feature::hardware_tasks(app, true);
+    let (software_tasks,_) = recreate_feature::software_tasks(app, true);
     let resources_user_structs = recreate_feature::resources_structs(app);
 
     

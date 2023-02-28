@@ -1,6 +1,6 @@
 use proc_macro2::{Span,TokenStream as TokenStream2};
 use quote::quote;
-use rtic_syntax::{ast::App, Context, analyze::Priority, ast::SoftwareTask};
+use rtic_syntax::{ Context, analyze::Priority, ast::{SoftwareTask,PassModule,App}};
 
 use std::str::FromStr;
 use std::collections::HashMap;
@@ -25,7 +25,7 @@ use syn::{Ident, LitInt, Path};
 pub fn generate_software_task(
     name: &Ident, 
     task: &SoftwareTask,
-    _dispatcher_name: &Ident,
+    pass_module: Option<&PassModule>,
     dispatcher_tasks_name: &Ident,
     dispatcher_queue: &Ident,
     device: &Path,
@@ -84,7 +84,7 @@ pub fn generate_software_task(
 
 
     // function inputs (context, message passing etcetera)
-    let function_context = &task.context;
+    let task_context = &task.context;
     let mut task_messages: Vec<TokenStream2> = vec![];
     let mut task_messages_internal: Vec<TokenStream2> = vec![];
     let mut task_messages_names: Vec<TokenStream2> = vec![];
@@ -101,6 +101,28 @@ pub fn generate_software_task(
         task_messages_names.push(quote!(#variable_internal,));
         task_messages_types.push(quote!(#the_type,));
     }
+    
+    // fetches exsisting items form previus passes and 
+    // checks if context is needed.
+    let mut module_items = None;
+    let mut function_context = None;
+    let mut function_call_context = None;
+    if let Some(module) = pass_module{
+        let items = &module.items;
+        module_items = Some(quote!(#(#items)*));
+
+        // If module dosent have any contex, we
+        // cant use it in call to task or task function.
+        if module.has_context{
+            function_context = Some(quote!{
+                #task_context: #name::Context,
+            });
+            function_call_context = Some(quote!{
+                #name::Context::new(priority)
+            });
+        }
+    }
+
 
     // Binds foo::spawn().unwrap(); to function foo in the dispatcher
     // match statement.
@@ -115,7 +137,7 @@ pub fn generate_software_task(
                 .0
                 .enqueue_unchecked(index);
             let priority = &rtic::export::Priority::new(PRIORITY);
-            #name(#name::Context::new(priority), #(#task_messages_names)*)
+            #name(#function_call_context #(#task_messages_names)*)
         }
     };
 
@@ -126,7 +148,7 @@ pub fn generate_software_task(
         #(#attrs)*
         #(#cfgs)*
         #[allow(non_snake_case)]
-        fn #name(#function_context: #name::Context, #(#task_messages)*){
+        fn #name(#function_context #(#task_messages)*){
             use rtic::Mutex as _;
             use rtic::mutex::prelude::*;
             #(#stmts)*
@@ -154,8 +176,8 @@ pub fn generate_software_task(
         vec_of_maybe_unit.push(quote!(core::mem::MaybeUninit::uninit(),))
     }
 
-    // don't know why we need this...
-    let link_section = format!(".uninit.rtic_{name}");
+    
+    let link_section = sw_names::link_seciton(name);
 
     // The software overhead needed for the task.
     let task_overhead = quote!{
@@ -173,7 +195,7 @@ pub fn generate_software_task(
 
         /// Binds internal task overhead to the user defined task.
         pub mod #name {
-            pub use super::#context as Context;
+            #module_items
             pub use super::#spawn_name as spawn;
         }
 

@@ -1,6 +1,4 @@
-//! examples/hardware.rs
-
-
+//! examples/locals.rs
 
 #![deny(unsafe_code)]
 #![deny(warnings)]
@@ -9,62 +7,50 @@
 
 use panic_semihosting as _;
 
-#[rtic::app(device = lm3s6965, compiler_passes = [hardware])]
+#[rtic::app(device = lm3s6965)]
 mod app {
     use cortex_m_semihosting::{debug, hprintln};
     use lm3s6965::Interrupt;
 
-    
     #[shared]
     struct Shared {}
 
     #[local]
-    struct Local {}
+    struct Local {
+        local_to_foo: i64,
+    }
 
+    // `#[init]` cannot access locals from the `#[local]` struct as they are initialized here.
     #[init]
     fn init(_: init::Context) -> (Shared, Local, init::Monotonics) {
-        // Pends the UART0 interrupt but its handler won't run until *after*
-        // `init` returns because interrupts are disabled
-        rtic::pend(Interrupt::UART0); // equivalent to NVIC::pend
-
-        hprintln!("init").unwrap();
-
-        (Shared {}, Local {}, init::Monotonics())
+        (
+            Shared {},
+            // initial values for the `#[local]` resources
+            Local {
+                local_to_foo: 0,
+            },
+            init::Monotonics(),
+        )
     }
 
-
-    #[task(binds = UART0,priority = 1)]
-    fn foo(_: foo::Context) {
-
-        gubben::run();
-        hprintln!("foo").unwrap();
-
-        debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator
+    // `local_to_idle` can only be accessed from this context
+    #[idle]
+    fn idle(_: idle::Context) -> ! {
+        loop {
+            rtic::pend(Interrupt::UART0);
+            cortex_m::asm::nop();
+        }
     }
 
-    
-    fn gubben(){
-        hprintln!("haj!").unwrap();
+    // `local_to_foo` can only be accessed from this context
+    #[task(binds = UART0, local = [local_to_foo])]
+    fn foo(cx: foo::Context) {
+        let local_to_foo = cx.local.local_to_foo;
+        *local_to_foo += 1;
+        hprintln!("foo: local_to_foo = {}", local_to_foo).unwrap();
+
+        if local_to_foo > &mut 2{    
+            debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator
+        }
     }
-
-    fn run_gubben(){
-        hprintln!("nu startar jag gubben!").unwrap();
-    
-    }
-
-    #[__rtic_pass_task_module]
-    pub mod gubben{
-        pub use super::run_gubben as run;
-    }
-
-    // should fail, internal not public
-    #[__rtic_pass_task_module]
-    pub mod fail2{
-        pub use super::run_gubben as hej;
-        pub use super::run_gubben as kalle;
-        use super::run_gubben as vector;
-    }
-
-    
-
 }

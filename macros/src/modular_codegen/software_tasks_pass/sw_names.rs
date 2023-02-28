@@ -29,3 +29,7 @@ pub fn dispatcher_variable(variable_name: &str) -> Ident{
     )
 }
 
+pub fn link_seciton(task_name: &Ident) -> String{
+    format!(".uninit.rtic_sw_{task_name}")
+}
+
