@@ -8,7 +8,6 @@ use std::collections::HashMap;
 use crate::{
     analyze::Analysis,
     check::Extra,
-    codegen::util,
 };
 
 use super::sw_names;
@@ -38,10 +37,6 @@ pub fn generate_software_task(
     TokenStream2,
     // the software task and overhead.
     TokenStream2,
-    // local resources,
-    Vec<TokenStream2>,
-    // shared resources,
-    Vec<String>,
     Vec<TokenStream2>,
     ){
     let attrs = &task.attrs;
@@ -239,8 +234,6 @@ pub fn generate_software_task(
         allocate_software_task_queue,
         bind_spawn_to_software_task,
         software_task,
-        local_resources,
-        shared_resources,
         special_context,
     );
 }

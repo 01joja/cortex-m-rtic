@@ -42,8 +42,6 @@ pub fn codegen(
     // hashmap, key: priority, value: vector of tasks.
     let priority_to_tasks = sort_tasks_after_priority(&app);
 
-    //TODO - better names and structure.
-
     let device = &extra.device;
     let mut software_tasks = vec![];
     let mut dispatchers = vec![];
@@ -70,8 +68,6 @@ pub fn codegen(
         // can be dispatched in order.
         let dispatcher_request_queue = sw_names::dispatcher_variable(&format!("request_queue_{priority}"));
 
-        let mut local_resources = vec![];
-        let mut shared_resources = vec![];
         let mut contexts = vec![];
 
         // Capacity for the dispatcher queue.
@@ -91,8 +87,6 @@ pub fn codegen(
             let (allocate_software_task_queue,
                 bind_spawn_to_software_task,
                 software_task,
-                task_local_resources,
-                task_shared_resources,
                 task_context) = 
                     software_tasks::generate_software_task(
                         name,
@@ -108,32 +102,10 @@ pub fn codegen(
             match_spawn_software_task.push(bind_spawn_to_software_task);
             software_tasks.push(software_task);
 
-            //No local resource is used by two tasks.
-            local_resources.extend(task_local_resources);
-            //Shared resources should be used by two tasks.
-            for resource in task_shared_resources{
-                if !shared_resources.contains(&resource){
-                    shared_resources.push(resource);
-                }
-            }
             contexts.extend(task_context);
         }
 
         
-        let mut local = vec![];
-        if !local_resources.is_empty(){
-            for resource in local_resources{
-                local.push(quote!(#resource,));
-            }
-        }
-
-        let mut shared = vec![];
-        if !shared_resources.is_empty(){
-            for resource in shared_resources{
-                shared.push(quote!(#resource,));
-            }
-        }
-        let resources = quote!(local = [#(#local)*], shared = [#(#shared)*]);
 
         
         let priority_lit = LitInt::new(&format!("{}",&priority),Span::call_site());
@@ -143,14 +115,10 @@ pub fn codegen(
         // Dispatches all software_tasks of priority of a certain priority.
         // The dispatcher is expressed as a hardware task that runs the
         // different software tasks of same prio as functions.
-        dispatchers.push(quote!(
-            #[task(binds = #interrupt, priority = #priority_lit, #resources)]
+        dispatchers.push(quote!{
+            #[allow(unsafe)]
+            #[task(binds = #interrupt, priority = #priority_lit)]
             fn #dispatcher_name(_: #dispatcher_name::Context){
-                #dispatcher_name_unsafe();
-            }
-            
-            /// The real dispatcher
-            fn #dispatcher_name_unsafe(){
                 unsafe{
                     const PRIORITY: u8 = #priority;
                     rtic::export::run(
@@ -202,8 +170,7 @@ pub fn codegen(
             static #dispatcher_request_queue: rtic::RacyCell<#dispatcher_request_queue_size> = rtic::RacyCell::new(
                 rtic::export::Queue::new(),
             );
-        ));
-
+        });
     }
 
     let init_software;
