@@ -1,9 +1,11 @@
 use crate::{analyze::Analysis, check::Extra, codegen::util};
 use proc_macro2::{Span, TokenStream as TokenStream2};
-use syn::{Ident};
+use syn::{Ident,Attribute};
 use quote::quote;
 use rtic_syntax::{analyze::Ownership, ast::App};
 use std::collections::HashMap;
+
+use super::r_names;
 
 /// Generates `static` variables and shared resource proxies
 pub fn codegen(
@@ -22,7 +24,7 @@ pub fn codegen(
     for (name, res) in &app.shared_resources {
         let cfgs = &res.cfgs;
         let ty = &res.ty;
-        let mangled_name = &util::static_shared_resource_ident(name);
+        let mangled_name = &r_names::racycell_shared_r(name);
 
         let attrs = &res.attrs;
 
@@ -31,7 +33,8 @@ pub fn codegen(
         let section = if attrs.iter().any(|attr| attr.path.is_ident("link_section")) {
             None
         } else {
-            Some(util::link_section_uninit())
+            let section = format!(".uninit.rtic_{}",name);
+            Some(quote!(#[link_section = #section]))
         };
 
         // For future use
@@ -50,7 +53,7 @@ pub fn codegen(
         // For future use
         // let doc = format!(" RTIC internal: {}:{}", file!(), line!());
 
-        let shared_name = util::need_to_lock_ident(name);
+        let shared_name = r_names::need_to_lock_r(name);
 
         if !res.properties.lock_free {
             mod_resources.push(quote!(
@@ -90,7 +93,7 @@ pub fn codegen(
             // For future use
             // let doc = format!(" RTIC internal ({} resource): {}:{}", doc, file!(), line!());
 
-            mod_app.push(util::impl_mutex(
+            mod_app.push(impl_mutex(
                 extra,
                 cfgs,
                 true,
@@ -122,7 +125,7 @@ pub fn codegen(
     let mut mask_ids = Vec::new();
 
     for (&priority, name) in interrupt_ids.chain(app.hardware_tasks.values().flat_map(|task| {
-        if !util::is_exception(&task.args.binds) {
+        if !is_exception(&task.args.binds) {
             Some((&task.args.priority, &task.args.binds))
         } else {
             // If any resource to the exception uses non-lock-free or non-local resources this is
@@ -170,14 +173,14 @@ pub fn codegen(
     }
 
     // Generate a constant for the number of chunks needed by Mask.
-    let chunks_name = util::priority_mask_chunks_ident();
+    let chunks_name = r_names::priority_mask_chunks_ident();
     mod_app.push(quote!(
         #[doc(hidden)]
         #[allow(non_upper_case_globals)]
         const #chunks_name: usize = rtic::export::compute_mask_chunks([#(#mask_ids),*]);
     ));
 
-    let masks_name = util::priority_masks_ident();
+    let masks_name = r_names::priority_masks_ident();
     mod_app.push(quote!(
         #[doc(hidden)]
         #[allow(non_upper_case_globals)]
@@ -195,3 +198,63 @@ pub fn codegen(
     (mod_app, mod_resources)
 }
 
+
+/// Whether `name` is an exception with configurable priority
+pub fn is_exception(name: &Ident) -> bool {
+    let s = name.to_string();
+
+    matches!(
+        &*s,
+        "MemoryManagement"
+            | "BusFault"
+            | "UsageFault"
+            | "SecureFault"
+            | "SVCall"
+            | "DebugMonitor"
+            | "PendSV"
+            | "SysTick"
+    )
+}
+
+/// Generates a `Mutex` implementation
+fn impl_mutex(
+    extra: &Extra,
+    cfgs: &[Attribute],
+    resources_prefix: bool,
+    name: &Ident,
+    ty: &TokenStream2,
+    ceiling: u8,
+    ptr: &TokenStream2,
+) -> TokenStream2 {
+    let (path, priority) = if resources_prefix {
+        (quote!(shared_resources::#name), quote!(self.priority()))
+    } else {
+        (quote!(#name), quote!(self.priority))
+    };
+
+    let device = &extra.device;
+    let masks_name = r_names::priority_masks_ident();
+    quote!(
+        #(#cfgs)*
+        impl<'a> rtic::Mutex for #path<'a> {
+            type T = #ty;
+
+            #[inline(always)]
+            fn lock<RTIC_INTERNAL_R>(&mut self, f: impl FnOnce(&mut #ty) -> RTIC_INTERNAL_R) -> RTIC_INTERNAL_R {
+                /// Priority ceiling
+                const CEILING: u8 = #ceiling;
+
+                unsafe {
+                    rtic::export::lock(
+                        #ptr,
+                        #priority,
+                        CEILING,
+                        #device::NVIC_PRIO_BITS,
+                        &#masks_name,
+                        f,
+                    )
+                }
+            }
+        }
+    )
+}

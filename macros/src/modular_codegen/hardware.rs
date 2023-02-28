@@ -15,6 +15,7 @@ mod hardware_tasks;
 mod idle;
 mod init;
 mod module;
+mod main_init;
 
 pub fn codegen(
     app: &App, 
@@ -45,8 +46,7 @@ pub fn codegen(
         user_hardware_tasks) 
         = hardware_tasks::codegen(app, analysis, extra);
     let (module_init, 
-        user_init, 
-        main_init) 
+        user_init, ) 
         = init::codegen(app, analysis, extra);
     let (mod_app_idle, 
         module_idle, 
@@ -54,36 +54,8 @@ pub fn codegen(
         call_idle) 
         = idle::codegen(app, analysis, extra);
     
-
     
-    let mut passes_init = None;
-    let mut rescources_init = None;
-
-    
-    if true{
-        passes_init = Some(quote!());
-        rescources_init = Some(quote!());
-    }
-
-    
-    // if let Some(main_fn) = &app.main_fn{
-    //     let stmts = &main_fn.stmts;
-    //     passes_init = Some(quote!(#(#stmts)*));
-    //     let rescources_init_stmts = &main_fn.resource_init;
-    //     rescources_init = Some(quote!(#(#rescources_init_stmts)*));
-    // }
-
-    // let mut modules = vec![]; 
-    // for (i,t) in &app.task_modules{
-    //     let items = &t.items;
-    //     let module = quote!{
-    //         pub mod #i{
-    //             #(#items)*
-    //         }
-    //     };
-    //     modules.push(module);
-    // }
-
+    let main_init = main_init::codegen(app, analysis, extra);
     let main_name = util::suffixed("main");
     main.push(quote!(
         #[doc(hidden)]
@@ -92,8 +64,6 @@ pub fn codegen(
             #[no_mangle]
             unsafe extern "C" fn #main_name() -> ! {
                 #(#assertion_stmts)*
-
-                #passes_init
 
                 #main_init 
 

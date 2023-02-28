@@ -1,15 +1,24 @@
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
+use syn::Ident;
 use rtic_syntax::{ast::App, Context};
 
 use crate::codegen::util;
 
+use super::r_names;
+
 /// Generate shared resources structs
-pub fn codegen(ctxt: Context, needs_lt: &mut bool, app: &App) -> (TokenStream2, TokenStream2) {
+pub fn codegen(
+    task_name: 
+    &Ident, context: Context, 
+    needs_shared_life_time: &mut bool, 
+    app: &App) -> 
+    (TokenStream2, TokenStream2) 
+{
     let mut lt = Some(quote!('a));
 
     
-    let resources = match ctxt {
+    let resources = match context {
         Context::Init => unreachable!("Tried to generate shared resources struct for init"),
         Context::Idle => {&app.idle.as_ref().unwrap().args.shared_resources},
         Context::HardwareTask(name) => {&app.hardware_tasks[name].args.shared_resources},
@@ -34,12 +43,12 @@ pub fn codegen(ctxt: Context, needs_lt: &mut bool, app: &App) -> (TokenStream2, 
             None
         };
         let ty = &res.ty;
-        let mangled_name = util::static_shared_resource_ident(name);
-        let shared_name = util::need_to_lock_ident(name);
+        let mangled_name = r_names::racycell_shared_r(name);
+        let shared_name = r_names::need_to_lock_r(name);
 
         if res.properties.lock_free {
             // Lock free resources of `idle` and `init` get 'static lifetime
-            let lt = if ctxt.runs_once() {
+            let lt = if context.runs_once() {
                 lt = None;
                 quote!('static)
             } else {
@@ -86,7 +95,7 @@ pub fn codegen(ctxt: Context, needs_lt: &mut bool, app: &App) -> (TokenStream2, 
     }
 
     if lt.is_some() {
-        *needs_lt = true;
+        *needs_shared_life_time = true;
 
         // The struct could end up empty due to `cfg`s leading to an error due to `'a` being unused
         if has_cfgs {
@@ -99,8 +108,8 @@ pub fn codegen(ctxt: Context, needs_lt: &mut bool, app: &App) -> (TokenStream2, 
         }
     }
 
-    let doc = format!("Shared resources `{}` has access to", ctxt.ident(app));
-    let ident = util::shared_resources_ident(ctxt, app);
+    let doc = format!("Shared resources `{}` has access to", context.ident(app));
+    let ident = r_names::shared_r_struct(task_name);
     let item = quote!(
         #[allow(non_snake_case)]
         #[allow(non_camel_case_types)]
@@ -110,7 +119,7 @@ pub fn codegen(ctxt: Context, needs_lt: &mut bool, app: &App) -> (TokenStream2, 
         }
     );
 
-    let arg = if ctxt.is_init() {
+    let arg = if context.is_init() {
         None
     } else {
         Some(quote!(priority: &#lt rtic::export::Priority))

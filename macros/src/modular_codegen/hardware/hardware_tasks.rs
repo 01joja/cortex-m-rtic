@@ -19,8 +19,8 @@ use super::{
 /// Generate support code for hardware tasks (`#[exception]`s and `#[interrupt]`s)
 pub fn codegen(
     app: &App, 
-    analysis: &Analysis,
-    extra: &Extra,
+    _analysis: &Analysis,
+    _extra: &Extra,
 ) -> (
     // interrupts -- interrupt handlers
     Vec<TokenStream2>,
@@ -88,7 +88,6 @@ pub fn codegen(
         );
 
         let attrs = &task.attrs;
-        let context = &task.context;
         let stmts = &task.stmts;
         user_tasks.push(
             quote!(

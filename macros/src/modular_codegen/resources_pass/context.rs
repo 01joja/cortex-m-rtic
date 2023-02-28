@@ -64,7 +64,7 @@ pub fn codegen(
             ));
         }
         implementation.push(quote!(
-            shared: #name::SharedResources::new(),
+            shared: #name::SharedResources::new(priority),
         ));
     }
 

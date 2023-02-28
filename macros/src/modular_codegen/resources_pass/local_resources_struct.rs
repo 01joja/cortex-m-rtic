@@ -1,7 +1,7 @@
 use proc_macro2::{TokenStream as TokenStream2, Ident};
 use quote::quote;
 use rtic_syntax::{
-    ast::{App, TaskLocal},
+    ast::{App, TaskLocal, LocalResources},
     Context,
 };
 
@@ -9,26 +9,26 @@ use super::r_names;
 
 
 /// Generates local resources structs
-pub fn codegen(task_name: &Ident, context: Context, needs_local_life_time: &mut bool, app: &App) -> (TokenStream2, TokenStream2) {
+pub fn codegen(
+    task_name: &Ident, 
+    context: Context, 
+    needs_local_life_time: &mut bool, 
+    app: &App) -> 
+    (TokenStream2, TokenStream2) 
+{
     let mut life_time = None;
-
-    let caller;
 
     let resources = match context {
         Context::Init => {
-            caller = "Init"; 
             &app.init.args.local_resources
         },
         Context::Idle => {
-            caller = "Idle"; 
             &app.idle.as_ref().unwrap().args.local_resources
         },
         Context::HardwareTask(name) => {
-            caller = "Hardware"; 
             &app.hardware_tasks[name].args.local_resources
         },
         Context::SoftwareTask(name) => {
-            caller = "Software"; 
             &app.software_tasks[name].args.local_resources
         },
     };
@@ -60,9 +60,9 @@ pub fn codegen(task_name: &Ident, context: Context, needs_local_life_time: &mut 
         };
 
         let mangled_name = if matches!(task_local, TaskLocal::External) {
-            r_names::external_local_r(name)
+            r_names::racycell_external_local_r(name)
         } else {
-            r_names::declared_local_r(name, &task_name)
+            r_names::racycell_declared_local_r(name, &task_name)
         };
 
         fields.push(quote!(

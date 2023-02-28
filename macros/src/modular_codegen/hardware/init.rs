@@ -9,9 +9,6 @@ use crate::modular_codegen::{
     check::Extra,
 };
 
-mod post_init;
-mod pre_init;
-
 use super::{module};
 
 use crate::codegen::util;
@@ -30,21 +27,12 @@ pub fn codegen(
     Vec<TokenStream2>,
     // user_init -- the `#[init]` function written by the user
     TokenStream2,
-    // main_init: (put pre_init + call_init + post_init in to one.)
-    // - pre_init
-    // ++ generates code that runs before `#[init]`
-    // - call_init:
-    // ++ call to the user `#[init]`
-    // - post_init:
-    // ++ generates code that runs after `#[init]` returns
-    TokenStream2,
 ) {
 
     let init = &app.init;
-    let local_needs_lt = false;
     let name = &init.name;
 
-    let mut module_init = vec![];
+    let mut init_items = vec![];
 
     let context = &init.context;
     let attrs = &init.attrs;
@@ -75,7 +63,7 @@ pub fn codegen(
             )
         }).collect();
 
-    module_init.push(quote! {
+    init_items.push(quote! {
         struct #shared {
             #(#shared_resources)*
         }
@@ -97,108 +85,57 @@ pub fn codegen(
             #(#stmts)*
         }
     );
-    
-    let main_init = codegen_main_init(name, app, analysis, extra);
 
-
-    module::codegen_original(
-        "init",
-        false,
-        true,
-        false,
-        Context::Init,
-        false,
-        local_needs_lt,
-        app, 
-        analysis, 
-        extra
-    );
-
-
-    let module2 = module_func(
-        name, 
-        local_needs_lt, 
-        app, 
-        analysis, 
-        extra);
-    
-    // let test1 = format!("{:?}", module1);
-    // let test2 = format!("{:?}", module2);
-    // let hej = assert_eq!(test1,test2);
-
-    module_init.push(module2);
-
-    (module_init, user_init, main_init)
-}
-
-
-// Will replace module.
-fn module_init() -> TokenStream2{
-
-    quote!(println!("mod_app"))
-}
-
-
-fn codegen_main_init(
-    name: &Ident, 
-    app: &App, 
-    analysis: &Analysis,
-    extra: &Extra,
-) -> TokenStream2{
-
-    let pre_init_stmts = pre_init::codegen_original(app, analysis, extra);
-    // let post_init_stmts = post_init::codegen_original(app, analysis);
-    let mut pre_init_passes_stmts = &vec![];
-    let mut post_init_stmts = &vec![];
-
-    if let Some(main_fn) = &app.main_fn{
-        pre_init_passes_stmts = &main_fn.pre_init;
-        post_init_stmts = &main_fn.post_init;
+    let mut module = vec![];
+    let mut has_context = false;
+    let mut has_monotonic = false;
+    if let Some(pass_module) = app.pass_modules.get(name){
+        let items = &pass_module.items;
+        for i in items{
+            module.push(quote!(#i));
+        }
+        has_context = pass_module.has_context;
+        has_monotonic = pass_module.has_monotonic;
+        if !has_monotonic{
+            module.push(quote!(pub use super::__rtic_internal_Monotonics as Monotonics;));
+        }
     }
     
-    
-    // let locals_new = locals_new.iter();
-    let call_init = quote! {
-        let (shared_resources, local_resources, mut monotonics) = #name(#name::Context::new(core.into()));
-    };
-
-    quote!{
-        
-        #(#pre_init_stmts)*
-        
-        #(#pre_init_passes_stmts)*
-
-        #[inline(never)]
-        fn __rtic_init_resources<F>(f: F) where F: FnOnce() {
-            f();
+    // Init has already been generated.
+    if has_context{
+        init_items.push(quote!{
+            mod #name{
+                #(#module)*
+            }
+        });
+        if !has_monotonic{
+            init_items.push(
+                quote!{
+                    #[allow(non_snake_case)]
+                    #[allow(non_camel_case_types)]
+                    pub struct __rtic_internal_Monotonics();
+                }
+            );
         }
 
-        // Wrap late_init_stmts in a function to ensure that stack space is reclaimed.
-        __rtic_init_resources(||{
-            #call_init
-
-            #(#post_init_stmts)*
-            
-            rtic::export::interrupt::enable();
-        });
+    } else{
+        let module = generate_module(
+                name, 
+                app, 
+                analysis, 
+                extra);
+        init_items.push(module);
     }
+    
+    
+
+
+    (init_items, user_init)
 }
 
 
-
-// during basic:
-// Module 001
-// Module 007
-// Module 009
-// Module 014
-// Module 016
-// Module 018
-// Module 021
-
-
-fn module_func(
+fn generate_module(
     name: &Ident,
-    _local_resources_tick:bool,
     app: &App, 
     _analysis: &Analysis,
     extra: &Extra,
@@ -325,10 +262,6 @@ fn module_func(
             }
         )
     }
-}
-
-fn user_init_fn() -> TokenStream2{
-    quote!(println!("user_init"))
 }
 
 

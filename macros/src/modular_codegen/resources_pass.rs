@@ -4,7 +4,8 @@ use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use rtic_syntax::{
     ast::{App, SharedResource, SharedResources, LocalResources}, 
-    analyze::Priority};
+    analyze::Priority, 
+    Context};
 use std::fs;
 
 use std::str::FromStr;
@@ -22,9 +23,9 @@ mod local_resources;
 mod shared_resources_struct;
 mod shared_resources;
 mod r_names;
-mod resources;
 mod context;
-mod init_resources;
+mod post_init;
+mod assertion;
 
 pub fn codegen(
     app: &App,
@@ -57,13 +58,133 @@ pub fn codegen(
     // creates the argument used in the rtic parser
     let argument = recreate_feature::argument(app, extra);
 
-    let (contexts, structs,) = resources::codegen(app, analysis, extra);
-    let post_init_resources = init_resources::codegen(app, analysis, extra);
+    // let (contexts, structs,) = resources::codegen(app, analysis, extra);
+    let assertions = assertion::codegen(app, analysis, extra);
+    let post_init_resources = post_init::codegen(app, analysis, extra);
+
+    let mut contexts = vec![];
+    let mut structs = vec![];
+    let mut local_life_time = false;
+    let mut shared_life_time = false;
+
+    // init resources and context
+    // init can't have shared resources.
+    let context = Context::Init;
+    let task_name = &app.init.name;
+    let has_local = app.init.args.local_resources.len() > 0;
+    let has_shared = false;
+
+    if has_local{
+        let (item, constructor) = 
+            local_resources_struct::codegen(task_name, context, &mut local_life_time, app);
+        structs.push(quote!(#item #constructor));
+    };
+
+    contexts.push(context::codegen( 
+        task_name, 
+        has_local, 
+        &local_life_time, 
+        has_shared, 
+        &shared_life_time,
+        true
+    ));
+
+
+    // idle resources and context
+    if let Some(idle) = &app.idle{
+        let context = Context::Idle;
+        let task_name = &idle.name;
+        let has_local = idle.args.local_resources.len() > 0;
+        let has_shared = idle.args.shared_resources.len() > 0;
+
+        if has_local{
+            let (item, constructor) = 
+                local_resources_struct::codegen(task_name, context, &mut local_life_time, app);
+            structs.push(quote!(#item #constructor));
+        };
+
+        if has_shared{
+            let (item, constructor) = 
+                shared_resources_struct::codegen(task_name, context,  &mut shared_life_time, app);
+            structs.push(quote!(#item #constructor));
+        }
+
+        contexts.push(context::codegen( 
+            task_name, 
+            has_local, 
+            &local_life_time, 
+            has_shared, 
+            &shared_life_time, 
+            false
+        ));
+
+    }
+
+    // hardware tasks resources and context
+    for (task_name, task) in &app.hardware_tasks{
+        let context = Context::HardwareTask(task_name);
+        let has_local = task.args.local_resources.len() > 0;
+        let has_shared = task.args.shared_resources.len() > 0;
+
+        if has_local{
+            let (item, constructor) = 
+            local_resources_struct::codegen(task_name, context, &mut local_life_time, app);
+            structs.push(quote!(#item #constructor));
+        };
+
+        if has_shared{
+            let (item, constructor) = 
+            shared_resources_struct::codegen(task_name, context,  &mut shared_life_time, app);
+            structs.push(quote!(#item #constructor));
+        }
+        
+        contexts.push(context::codegen( 
+            task_name, 
+            has_local, 
+            &local_life_time, 
+            has_shared, 
+            &shared_life_time, 
+            false
+        ));
+
+    }
+
+    // software tasks resources and context
+    for (task_name, task) in &app.software_tasks{
+        let context = Context::SoftwareTask(task_name);
+        let has_local = task.args.local_resources.len() > 0;
+        let has_shared = task.args.shared_resources.len() > 0;
+
+        if has_local{
+            let (item, constructor) = 
+            local_resources_struct::codegen(task_name, context, &mut local_life_time, app);
+            structs.push(quote!(#item #constructor));
+        };
+
+        if has_shared{
+            let (item, constructor) = 
+            shared_resources_struct::codegen(task_name, context,  &mut shared_life_time, app);
+            structs.push(quote!(#item #constructor));
+        }
+
+        contexts.push(context::codegen( 
+            task_name, 
+            has_local, 
+            &local_life_time, 
+            has_shared, 
+            &shared_life_time, 
+            false
+        ));
+
+    }
+    let mod_app_local = local_resources::codegen(app);
+    let (mod_app_shared, resources_module) = shared_resources::codegen(app, analysis, extra);
+    structs.push(quote!(#(#mod_app_local)* #(#mod_app_shared)* #resources_module));
+
+
 
     let code = quote!{
         mod #name{
-
-            //#(#local_resources)*
 
             #(#contexts)*
 
@@ -85,6 +206,7 @@ pub fn codegen(
 
             #[__rtic_main]
             fn __rtic_main(){
+                #(#assertions)*
                 #[__post_init]
                 fn post_init(){
                     #(#post_init_resources)*

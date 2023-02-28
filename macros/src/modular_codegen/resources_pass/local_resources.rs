@@ -25,7 +25,7 @@ pub fn codegen(
     for (name, res) in &app.local_resources {
         let cfgs = &res.cfgs;
         let ty = &res.ty;
-        let mangled_name = r_names::external_local_r(name);
+        let mangled_name = r_names::racycell_external_local_r(name);
 
         let attrs = &res.attrs;
 
@@ -63,7 +63,7 @@ pub fn codegen(
         let attrs = &task_local.attrs;
 
 
-        let mangled_name = r_names::declared_local_r(resource_name, task_name);
+        let mangled_name = r_names::racycell_declared_local_r(resource_name, task_name);
 
         // For future use
         // let doc = format!(" RTIC internal: {}:{}", file!(), line!());

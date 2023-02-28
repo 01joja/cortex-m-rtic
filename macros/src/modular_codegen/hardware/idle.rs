@@ -17,8 +17,8 @@ use super::{
 /// Generates support code for `#[idle]` functions
 pub fn codegen(
     app: &App,
-    analysis: &Analysis,
-    extra: &Extra,
+    _analysis: &Analysis,
+    _extra: &Extra,
 ) -> (
     // mod_app_idle -- the `${idle}Resources` constructor
     Vec<TokenStream2>,
@@ -30,7 +30,7 @@ pub fn codegen(
     TokenStream2,
 ) {
     if let Some(idle) = &app.idle {
-        let mut mod_app = vec![];
+        let mod_app = vec![];
         let mut module_idle = None;
 
         let attrs = &idle.attrs;
@@ -39,8 +39,6 @@ pub fn codegen(
         let name = &idle.name;
         
         let doc = "idle loop";
-
-        let internal_context_name = Ident::new(&format!("__rtic_idle_{}_context", name), Span::call_site());
 
 
         let mut context_call_to_idle = None;
