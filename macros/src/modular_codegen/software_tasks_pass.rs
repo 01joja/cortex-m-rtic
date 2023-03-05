@@ -45,16 +45,25 @@ pub fn codegen(
     let (user_idle, idle_module) = recreate_feature::idle(app, false);
     let (hardware_tasks, hardware_module) = recreate_feature::hardware_tasks(app, false);
     let resources_structs = recreate_feature::resources_structs(app);
-    
+
     let (dispatchers, 
         software_tasks, 
         init_software) = dispatchers::codegen(app, extra);
+
+    let mut pre_init = vec![];
+    let mut post_init = vec![];
+    if let Some(main_fn) = &app.main_fn{
+        pre_init.extend(&main_fn.pre_init);
+        post_init.extend(&main_fn.post_init);
+    }
         
     // creates the argument used in the rtic parser
     let argument = recreate_argument(extra);
 
     let code = quote!(
         mod #name{
+
+            #resources_structs
 
             #(#user_imports)*
             
@@ -76,11 +85,14 @@ pub fn codegen(
 
             #(#hardware_module)*
             
-            #resources_structs
-            
             #[__rtic_main]
             fn __rtic_main(){
                 #init_software
+                #(#pre_init)*
+                #[__post_init]
+                fn post_init(){
+                    #(#post_init)*
+                }
             }
         }
     );

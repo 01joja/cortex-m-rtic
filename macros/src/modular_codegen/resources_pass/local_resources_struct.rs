@@ -103,7 +103,6 @@ pub fn codegen(
 
     // can be wrong
     let ident = r_names::local_r_struct(task_name);
-    println!("ident output {}",ident);
     let item = quote!(
         #[allow(non_snake_case)]
         #[allow(non_camel_case_types)]

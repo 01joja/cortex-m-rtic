@@ -71,12 +71,12 @@ pub fn hardware_tasks(app: &App, skip_resources: bool) -> (
 
         if let Some(module) = app.pass_modules.get(name){
             let has_context = &module.has_context;
-            let has_monotonic = &module.has_context;
+            let has_monotonic = &module.has_monotonic;
             let items = &module.items;
 
             hw_modules.push(quote!{
                 #[__rtic_pass_module(has_context = #has_context, has_monotonic = #has_monotonic)]
-                mod #name{
+                pub mod #name{
                     #(#items)*
                 }
 
@@ -131,12 +131,12 @@ pub fn software_tasks(app: &App, skip_resources: bool) -> (
 
         if let Some(module) = app.pass_modules.get(name){
             let has_context = &module.has_context;
-            let has_monotonic = &module.has_context;
+            let has_monotonic = &module.has_monotonic;
             let items = &module.items;
 
             sw_modules.push(quote!{
                 #[__rtic_pass_module(has_context = #has_context, has_monotonic = #has_monotonic)]
-                mod #name{
+                pub mod #name{
                     #(#items)*
                 }
 
@@ -186,12 +186,12 @@ pub fn idle(app:&App, skip_resources: bool) -> (
         let mut idle_module = None;
         if let Some(module) = app.pass_modules.get(name){
             let has_context = &module.has_context;
-            let has_monotonic = &module.has_context;
+            let has_monotonic = &module.has_monotonic;
             let items = &module.items;
 
             idle_module = Some(quote!{
                 #[__rtic_pass_module(has_context = #has_context, has_monotonic = #has_monotonic)]
-                mod #name{
+                pub mod #name{
                     #(#items)*
                 }
             })
@@ -247,12 +247,12 @@ pub fn init(app:&App, skip_resources: bool) -> (
     let mut init_module = None;
     if let Some(module) = app.pass_modules.get(name){
         let has_context = &module.has_context;
-        let has_monotonic = &module.has_context;
+        let has_monotonic = &module.has_monotonic;
         let items = &module.items;
 
         init_module = Some(quote!{
             #[__rtic_pass_module(has_context = #has_context, has_monotonic = #has_monotonic)]
-            mod #name{
+            pub mod #name{
                 #(#items)*
             }
 

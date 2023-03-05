@@ -135,24 +135,31 @@ pub fn app(
         // add different passes here:
         match pass.as_str() {
             "monotonics" =>{
+                println!("generating monotonics");
                 (generated_arguments, generated_code) 
                     = monotonic_pass::codegen(&app, &extra);
+                println!("parsing");
             }
             
             "resources" =>{
+                println!("generating resources");
                 (generated_arguments, generated_code) 
                 = resources_pass::codegen(&app, &analysis, &extra);
+                println!("parsing");
             }
 
             "software" => {
+                println!("generating software tasks");
                 (generated_arguments, generated_code) 
                     = software_tasks_pass::codegen(&app,&extra);
+                println!("parsing");
             }
 
             "hardware" => {
+                println!("generating hardware tasks");
                 (generated_arguments, generated_code)  
                     = hardware::codegen(&app,&analysis,&extra);
-                println!("got to finishline");
+                println!("finished");
             }
             
             unknown_pass => {
