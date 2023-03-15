@@ -81,6 +81,7 @@ pub fn codegen(
     };
 
     contexts.push(context::codegen( 
+        app,
         task_name, 
         has_local, 
         &local_life_time, 
@@ -110,6 +111,7 @@ pub fn codegen(
         }
 
         contexts.push(context::codegen( 
+            app,
             task_name, 
             has_local, 
             &local_life_time, 
@@ -139,6 +141,7 @@ pub fn codegen(
         }
         
         contexts.push(context::codegen( 
+            app,
             task_name, 
             has_local, 
             &local_life_time, 
@@ -168,6 +171,7 @@ pub fn codegen(
         }
 
         contexts.push(context::codegen( 
+            app,
             task_name, 
             has_local, 
             &local_life_time, 
@@ -181,7 +185,12 @@ pub fn codegen(
     let (mod_app_shared, resources_module) = shared_resources::codegen(app, analysis, extra);
     structs.push(quote!(#(#mod_app_local)* #(#mod_app_shared)* #resources_module));
 
-
+    let mut passes_pre_init = &vec![];
+    let mut passes_post_init = &vec![];
+    if let Some(main_fn) = &app.main_fn{
+        passes_pre_init = &main_fn.pre_init;
+        passes_post_init = &main_fn.post_init;
+    }
 
     let code = quote!{
         mod #name{
@@ -207,9 +216,11 @@ pub fn codegen(
             #[__rtic_main]
             fn __rtic_main(){
                 #(#assertions)*
+                #(#passes_pre_init)*
                 #[__post_init]
                 fn post_init(){
                     #(#post_init_resources)*
+                    #(#passes_post_init)*
                 }
             }
         }
