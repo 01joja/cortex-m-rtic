@@ -33,7 +33,7 @@ mod generate_syntax;
 // Passes
 mod software_tasks_pass;
 mod hardware;
-mod monotonic_pass;
+mod monotonics_pass;
 mod resources_pass;
 mod recreate_feature;
 mod tokens;
@@ -137,7 +137,7 @@ pub fn app(
             "monotonics" =>{
                 println!("generating monotonics");
                 (generated_arguments, generated_code) 
-                    = monotonic_pass::codegen(&app, &extra);
+                    = monotonics_pass::codegen(&app, &analysis, &extra);
                 println!("parsing");
             }
             

@@ -10,10 +10,11 @@ use super::r_names;
 
 
 ///Generates following:
-/// - context struct
+/// - context struct 
 /// - context implementation
-/// - module for task
+/// - module for all tasks (even the tasks without resources)
 pub fn codegen(
+    app: &App,
     name: &Ident, 
     has_local: bool,
     local_life_time: &bool,
@@ -27,7 +28,7 @@ pub fn codegen(
     let mut implementation = vec![];
     let mut life_time = None;
     
-
+    
     if has_local {
         let struct_local_name = r_names::local_r_struct(name);
         module.push(quote!(
@@ -93,10 +94,20 @@ pub fn codegen(
     }
 
     let context_name = r_names::context_name(name);
+    let mut has_monotonic = false; 
+    // adds modules form previous passes.
+    if let Some(pass_module) = app.pass_modules.get(name){
+        let items = &pass_module.items;
+        module.push(quote!(#(#items)*));
+        if pass_module.has_monotonic{
+            has_monotonic = true;
+        }
+    }
 
+    // always sets has_context to true.
     quote!(
 
-        #[__rtic_pass_module(has_context = true)]
+        #[__rtic_pass_module(has_context = true, has_monotonic = #has_monotonic)]
         pub mod #name{
             pub use super::#context_name as Context;
             #(#module)*

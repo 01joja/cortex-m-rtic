@@ -26,8 +26,6 @@ use syn::{Ident, LitInt, Path};
 /// The dispatcher will then take care of running the right task.
 /// 
 /// The overhead that makes calls like "foo::spawn().unwrap();" possible. 
-/// 
-/// TODO: local and shared resources
 pub fn codegen(
     app: &App, 
     extra: &Extra,
@@ -36,7 +34,7 @@ pub fn codegen(
     Vec<TokenStream2>,
     // Software_tasks - Code generated for the software tasks
     Vec<TokenStream2>,
-    // fn init_software - allocates memory for the function queues
+    // init_software - allocates memory for the function queues
     TokenStream2){
 
     // hashmap, key: priority, value: vector of tasks.
@@ -166,7 +164,7 @@ pub fn codegen(
             #[doc(hidden)]
             #[allow(non_camel_case_types)]
             #[allow(non_upper_case_globals)]
-            static #dispatcher_request_queue: rtic::RacyCell<#dispatcher_request_queue_size> = rtic::RacyCell::new(
+            pub static #dispatcher_request_queue: rtic::RacyCell<#dispatcher_request_queue_size> = rtic::RacyCell::new(
                 rtic::export::Queue::new(),
             );
         });

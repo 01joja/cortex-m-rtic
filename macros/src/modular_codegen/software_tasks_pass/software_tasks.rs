@@ -27,7 +27,7 @@ pub fn generate_software_task(
     task: &SoftwareTask,
     pass_module: Option<&PassModule>,
     dispatcher_tasks_name: &Ident,
-    dispatcher_queue: &Ident,
+    dispatcher_request_queue: &Ident,
     device: &Path,
     interrupt: &Ident
     ) -> (
@@ -44,7 +44,7 @@ pub fn generate_software_task(
     let stmts  = &task.stmts;
 
     // Creates internal names
-    let function_queue =  sw_names::task_variable(name,"function_queue");
+    let request_queue =  sw_names::task_variable(name,"request_queue");
     let input_queue =  sw_names::task_variable(name,"input_queue");
         
     // Allocates memory for the software functions queues during
@@ -52,7 +52,7 @@ pub fn generate_software_task(
     let capacity_u8 = &task.args.capacity;
     let allocate_software_task_queue = quote!{
         (0..#capacity_u8).for_each(|i| {
-            (&mut *#function_queue.get_mut()).enqueue_unchecked(i)
+            (&mut *#request_queue.get_mut()).enqueue_unchecked(i)
         });
     };
 
@@ -83,8 +83,7 @@ pub fn generate_software_task(
 
 
 
-    // function inputs (context, message passing etcetera)
-    let task_context = &task.context;
+    // formats message passing variables 
     let mut task_messages: Vec<TokenStream2> = vec![];
     let mut task_messages_internal: Vec<TokenStream2> = vec![];
     let mut task_messages_names: Vec<TokenStream2> = vec![];
@@ -102,16 +101,21 @@ pub fn generate_software_task(
         task_messages_types.push(quote!(#the_type,));
     }
     
-    // fetches exsisting items form previus passes and 
+    // fetches existing items form previous passes and 
     // checks if context is needed.
+    let task_context = &task.context;
     let mut module_items = None;
     let mut function_context = None;
     let mut function_call_context = None;
     if let Some(module) = pass_module{
         let items = &module.items;
-        module_items = Some(quote!(#(#items)*));
+        module_items = Some(
+            quote!{
+                #(#items)*
+            }
+        );
 
-        // If module dosent have any contex, we
+        // If module doesn't have any context, we
         // cant use it in call to task or task function.
         if module.has_context{
             function_context = Some(quote!{
@@ -132,7 +136,7 @@ pub fn generate_software_task(
                 .get_unchecked(usize::from(index))
                 .as_ptr()
                 .read();
-            (&mut *#function_queue.get_mut())
+            (&mut *#request_queue.get_mut())
                 .split()
                 .0
                 .enqueue_unchecked(index);
@@ -187,15 +191,21 @@ pub fn generate_software_task(
         #[allow(non_camel_case_types)]
         #[allow(non_upper_case_globals)]
         #[doc(hidden)]
-        static #function_queue: rtic::RacyCell<#function_queue_capacity> = rtic::RacyCell::new(
+        pub static #request_queue: rtic::RacyCell<#function_queue_capacity> = rtic::RacyCell::new(
             rtic::export::Queue::new(),
         );
 
         
 
         /// Binds internal task overhead to the user defined task.
+        /// Also makes it possible for other passes to modify the 
+        /// function_queue and inputs. (Monotonic pass needs them)
         pub mod #name {
             #module_items
+            pub use super::#dispatcher_tasks_name as __internal_dispatcher_task_name;
+            pub use super::#dispatcher_request_queue as __internal_PRIO_REQUEST_Q;
+            pub use super::#request_queue as __internal_function_queue;
+            pub use super::#input_queue as __internal_input_queue;
             pub use super::#spawn_name as spawn;
         }
 
@@ -204,7 +214,7 @@ pub fn generate_software_task(
         #[allow(non_camel_case_types)]
         #[allow(non_upper_case_globals)]
         #[doc(hidden)]
-        static #input_queue: rtic::RacyCell<
+        pub static #input_queue: rtic::RacyCell<
             [core::mem::MaybeUninit<(#(#task_messages_types)*)>; #capacity_literal],> = rtic::RacyCell::new([
             #(#vec_of_maybe_unit)*
         ]);
@@ -224,14 +234,14 @@ pub fn generate_software_task(
             unsafe {
                 if let Some(index) 
                     = rtic::export::interrupt::free(|_| {
-                    (&mut *#function_queue.get_mut()).dequeue()}) 
+                    (&mut *#request_queue.get_mut()).dequeue()}) 
                     {  
                         (&mut *#input_queue.get_mut())
                             .get_unchecked_mut(usize::from(index))
                             .as_mut_ptr()
                             .write(input);
                         rtic::export::interrupt::free(|_| {
-                            (&mut *#dispatcher_queue.get_mut())
+                            (&mut *#dispatcher_request_queue.get_mut())
                             .enqueue_unchecked((#dispatcher_tasks_name::#name, index));
                         });
             

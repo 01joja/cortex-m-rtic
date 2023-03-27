@@ -33,3 +33,7 @@ pub fn link_seciton(task_name: &Ident) -> String{
     format!(".uninit.rtic_sw_{task_name}")
 }
 
+/// Just calls generate_syntax::rt_error()
+pub fn rt_error() -> Ident{
+    generate_syntax::rt_error()
+}
