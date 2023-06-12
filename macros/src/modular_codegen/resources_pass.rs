@@ -27,6 +27,8 @@ mod context;
 mod post_init;
 mod assertion;
 
+
+/// Generates the resources, but can't handle late resources.
 pub fn codegen(
     app: &App,
     analysis: &Analysis,
