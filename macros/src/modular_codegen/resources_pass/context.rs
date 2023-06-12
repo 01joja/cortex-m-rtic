@@ -72,6 +72,8 @@ pub fn codegen(
 
     let arguments;
     if init{
+        let device = &app.args.device;
+
         // init needs to have some specific things
         // to be able to configure everything
         life_time = Some(quote!('a));
@@ -79,12 +81,12 @@ pub fn codegen(
             /// Core (Cortex-M) peripherals
             pub core: rtic::export::Peripherals,
             /// Device peripherals
-            pub device: lm3s6965::Peripherals,
+            pub device: #device::Peripherals,
             /// Critical section token for init
             pub cs: rtic::export::CriticalSection<'a>,
         });
         implementation.push(quote!{
-            device: lm3s6965::Peripherals::steal(),
+            device: #device::Peripherals::steal(),
             cs: rtic::export::CriticalSection::new(),
             core,
         });
