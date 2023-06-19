@@ -301,9 +301,9 @@ fn resources(
     shared_resources: Option<&SharedResources>
 ) -> Vec<TokenStream2>{
     let mut resource = vec![];
+    let mut locals = vec![];
 
     if !local_resources.is_empty(){
-        let mut locals = vec![];
         
         for (ident,task_local) in local_resources{
 
@@ -322,22 +322,34 @@ fn resources(
 
         }
 
-        resource.push(quote!(local = [#(#locals)*]));
+        // resource.push(quote!(local = [#(#locals)*]));
     }
 
-
+    
+    let mut shared_tokens = vec![];
     if let Some(shared) = shared_resources{
         if !shared.is_empty(){
-            let mut shared_tokens = vec![];
 
             for local in shared{
                 let ident = local.0;
                 shared_tokens.push(quote!(#ident, ))
             }
 
-            resource.push(quote!(shared = [#(#shared_tokens)*]));
+            // resource.push(quote!(shared = [#(#shared_tokens)*]));
         }
     }
+
+    if !locals.is_empty() && !shared_tokens.is_empty(){
+        resource.push(quote!(local = [#(#locals)*] , shared = [#(#shared_tokens)*]));
+    }
+    else if !locals.is_empty(){
+        resource.push(quote!(local = [#(#locals)*]));
+    }
+    else if !shared_tokens.is_empty(){
+        resource.push(quote!(shared = [#(#shared_tokens)*]));
+    } 
+
+
     resource
 
 }
