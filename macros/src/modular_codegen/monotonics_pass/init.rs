@@ -34,25 +34,16 @@ pub fn codegen(
     
     let device = &extra.device;
     let nvic_prio_bits = quote!(#device::NVIC_PRIO_BITS);
-    
 
-
-    post_init.push(
-        quote!{
-            monotonics.0.reset();
-        }
-    );
-
-    for (name, monotonic) in &app.monotonics{
+    for (index, (name, monotonic)) in app.monotonics.iter().enumerate(){
         let monotonic_storage= m_names::monotonic_storage(name);
 
         pre_init.extend(codegen_pre_init(monotonic, &nvic_prio_bits));
 
         post_init.push(
             quote!{
-                #monotonic_storage
-                    .get_mut()
-                    .write(Some(monotonics.0));
+                monotonics.#index.reset();
+                #monotonic_storage.get_mut().write(Some(monotonics.#index));
             }
         )
 

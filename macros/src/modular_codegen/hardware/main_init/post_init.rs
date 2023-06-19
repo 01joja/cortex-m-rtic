@@ -57,6 +57,7 @@ pub fn codegen_original(
             index: i as u32,
             span: Span::call_site(),
         };
+        stmts.push(quote!(let felet = 0;));
         stmts.push(quote!(monotonics.#idx.reset();));
 
         // Store the monotonic
