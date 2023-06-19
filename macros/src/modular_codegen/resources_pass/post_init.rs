@@ -57,14 +57,14 @@ pub fn codegen(
             if let TaskLocal::External = task_type{
                 let internal_name = r_names::racycell_external_local_r(resource_name);
                 resources.push(quote!{
-                    #internal_name.get_mut().write(core::mem::MaybeUninit::new(shared_resources.#resource_name));
+                    #internal_name.get_mut().write(core::mem::MaybeUninit::new(local_resources.#resource_name));
                 })
             } // else if TaskLocal::Declared, it is declared in the RacyCell directly
         }
         for (resource_name, _) in &sw_task.args.shared_resources{
             let internal_name = r_names::racycell_shared_r(resource_name);
             resources.push(quote!{
-                #internal_name.get_mut().write(core::mem::MaybeUninit::new(local_resources.#resource_name));
+                #internal_name.get_mut().write(core::mem::MaybeUninit::new(shared_resources.#resource_name));
             });
         }
     }
