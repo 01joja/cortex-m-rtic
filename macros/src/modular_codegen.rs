@@ -1,11 +1,6 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
-fn print_type_of<T>(_: &T) {
-    println!("{}", std::any::type_name::<T>())
-}
-
-
 
 use quote::quote;
 use proc_macro2::{
@@ -83,7 +78,7 @@ pub fn app(
         };
 
     // saves contents of app to contents/app.txt and contents/app/
-    print::abstract_syntax_tree(&app);
+    // print::abstract_syntax_tree(&app);
     
     //extracts the passes.
     let mut passes = app.args.passes.clone();
@@ -135,31 +130,31 @@ pub fn app(
         // add different passes here:
         match pass.as_str() {
             "monotonics" =>{
-                println!("generating monotonics");
+                // println!("generating monotonics");
                 (generated_arguments, generated_code) 
                     = monotonics_pass::codegen(&app, &analysis, &extra);
-                println!("parsing");
+                // println!("parsing");
             }
             
             "resources" =>{
-                println!("generating resources");
+                // println!("generating resources");
                 (generated_arguments, generated_code) 
                 = resources_pass::codegen(&app, &analysis, &extra);
-                println!("parsing");
+                // println!("parsing");
             }
 
             "software" => {
-                println!("generating software tasks");
+                // println!("generating software tasks");
                 (generated_arguments, generated_code) 
                     = software_tasks_pass::codegen(&app,&extra);
-                println!("parsing");
+                // println!("parsing");
             }
 
             "hardware" => {
-                println!("generating hardware tasks");
+                // println!("generating hardware tasks");
                 (generated_arguments, generated_code)  
                     = hardware::codegen(&app,&analysis,&extra);
-                println!("finished");
+                // println!("finished");
             }
             
             unknown_pass => {

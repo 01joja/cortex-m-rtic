@@ -45,7 +45,6 @@ pub fn codegen(
         let timer_queue = m_names::timer_queue(monotonic_name);
         let bounded_interrupt = &monotonic.args.binds;
         let debug_struct_string = format!("{monotonic_name}::SpawnHandle");
-        println!("monotonic name: {monotonic_name}");
 
         for (sw_name, task) in software_tasks{
 
