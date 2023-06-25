@@ -4,6 +4,7 @@ use rtic_syntax::{ast::{App, Monotonic}, Context, analyze::Priority, ast::Softwa
 
 use std::str::FromStr;
 use std::collections::HashMap;
+use syn::Index;
 
 use crate::{
     analyze::Analysis,
@@ -40,10 +41,17 @@ pub fn codegen(
 
         pre_init.extend(codegen_pre_init(monotonic, &nvic_prio_bits));
 
+
+        #[allow(clippy::cast_possible_truncation)]
+        let idx = Index {
+            index: index as u32,
+            span: Span::call_site(),
+        };
+
         post_init.push(
             quote!{
-                monotonics.#index.reset();
-                #monotonic_storage.get_mut().write(Some(monotonics.#index));
+                monotonics.#idx.reset();
+                #monotonic_storage.get_mut().write(Some(monotonics.#idx));
             }
         )
 

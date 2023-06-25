@@ -5,6 +5,8 @@ use rtic_syntax::ast::App;
 use crate::{analyze::Analysis, check::Extra, codegen::util};
 
 
+//TODO: remove code that is generated in other passes.
+
 /// Generates code that runs before `#[init]`
 pub fn codegen_original(
     app: &App, 

@@ -18,13 +18,14 @@ version = "1.1.5"
 proc-macro = true
 
 [dependencies]
+ruint-macro = "1.0.2"
 proc-macro2 = "1"
 proc-macro-error = "1"
 quote = "1"
 syn = "1"
-#rtic-syntax = { git = "https://github.com/01joja/hijack-modular-rtic-syntax"}
+rtic-syntax = { git = "https://github.com/01joja/hijack-modular-rtic-syntax"}
 
-rtic-syntax = { path = "../../hijack-syntax" }
+#rtic-syntax = { path = "../../hijack-syntax" }
 # rtic-syntax = "1.0.2"
 
 # [patch.crates-io]
