@@ -109,8 +109,8 @@ pub fn app(
             Some(s) => s,
             None => {        
                 // no more passes and codegen terminates.
-                let print_generated_code = format!("{:#?}",generated_code);
-                fs::write("contents/generated_code.rs", print_generated_code).expect("Unable to write file");
+                // let print_generated_code = format!("{:#?}",generated_code);
+                // fs::write("contents/generated_code.rs", print_generated_code).expect("Unable to write file");
                 return generated_code;
             }
         };
