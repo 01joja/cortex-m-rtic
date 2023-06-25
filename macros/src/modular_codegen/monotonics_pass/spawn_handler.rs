@@ -19,7 +19,7 @@ use super::m_names;
 /// Creates the spawn_after and spawn_later functions.
 pub fn codegen(
     app: &App, 
-    extra: &Extra,
+    _extra: &Extra,
 ) -> (
     // Spawn_later, Spawn_at, cancel, reschedule_after, reschedule_at, 
     Vec<TokenStream2>,
@@ -40,7 +40,7 @@ pub fn codegen(
     for (monotonic_name, monotonic) in monotonics{
 
         //do I need this?? internal_m_name???
-        let internal_m_name = m_names::internal_monotonic_name(monotonic_name);
+        // let internal_m_name = m_names::internal_monotonic_name(monotonic_name);
         let monotonic_storage = m_names::monotonic_storage(monotonic_name);
         let timer_queue = m_names::timer_queue(monotonic_name);
         let bounded_interrupt = &monotonic.args.binds;

@@ -9,8 +9,8 @@ use crate::{analyze::Analysis, codegen::util};
 
 /// Generates code that runs after `#[init]` returns
 pub fn codegen_original(
-    app: &App, 
-    analysis: &Analysis,
+    _app: &App, 
+    _analysis: &Analysis,
 ) -> Vec<TokenStream2> {
     let mut stmts = vec![];
 

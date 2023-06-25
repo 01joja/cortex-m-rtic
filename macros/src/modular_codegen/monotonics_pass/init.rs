@@ -28,7 +28,7 @@ pub fn codegen(
     Vec<TokenStream2>,
 ){
 
-    let mut spawn_handlers = vec![quote!()];
+    // let mut spawn_handlers = vec![quote!()];
     let mut pre_init = vec![quote!()];
     let mut post_init = vec![];
 
@@ -70,7 +70,7 @@ fn codegen_pre_init(monotonic: &Monotonic, nvic_prio_bits: &TokenStream2)
     let mut pre_init = vec![];
 
     let name = &monotonic.ident;
-    let interrupt = m_names::interrupt();
+    // let interrupt = m_names::interrupt();
     let binds = &monotonic.args.binds;
     let priority = if let Some(prio) = &monotonic.args.priority{
         quote! { #prio }
