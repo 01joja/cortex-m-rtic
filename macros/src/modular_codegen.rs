@@ -27,7 +27,7 @@ mod generate_syntax;
 
 // Passes
 mod software_tasks_pass;
-mod hardware;
+mod hardware_pass;
 mod monotonics_pass;
 mod resources_pass;
 mod recreate_feature;
@@ -153,7 +153,7 @@ pub fn app(
             "hardware" => {
                 // println!("generating hardware tasks");
                 (generated_arguments, generated_code)  
-                    = hardware::codegen(&app,&analysis,&extra);
+                    = hardware_pass::codegen(&app,&analysis,&extra);
                 // println!("finished");
             }
             
