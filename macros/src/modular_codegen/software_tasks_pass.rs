@@ -10,7 +10,7 @@ use std::fs;
 use std::str::FromStr;
 use crate::{analyze::Analysis, check::Extra};
 
-use super::hardware;
+use super::hardware_pass;
 
 use super::recreate_feature;
 
