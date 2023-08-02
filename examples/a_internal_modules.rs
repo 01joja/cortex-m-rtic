@@ -58,12 +58,12 @@ mod app {
         }
     }
 
-    #[__rtic_pass_module(has_context = true)]
+    #[__rtic_task_module(has_context = true)]
     pub mod gubben{
          pub use super::run_gubben as run;
     }
 
-    #[__rtic_pass_module]
+    #[__rtic_task_module]
     pub mod foo{
          pub use super::run_gubben as run;
     }
