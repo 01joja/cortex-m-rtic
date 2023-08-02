@@ -10,9 +10,7 @@ use crate::modular_codegen::{
 use syn::{Attribute, Ident};
 
 
-use super::{
-    module, 
-};
+use super::module;
 
 /// Generates support code for `#[idle]` functions
 pub fn codegen(
@@ -44,7 +42,7 @@ pub fn codegen(
         let mut context_call_to_idle = None;
         let mut context_function = None;
 
-        if let Some(module) = app.pass_modules.get(name){
+        if let Some(module) = app.task_modules.get(name){
             let item = &module.items;
 
             module_idle = Some(quote!{

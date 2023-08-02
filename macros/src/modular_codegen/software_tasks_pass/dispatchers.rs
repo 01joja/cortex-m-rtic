@@ -88,7 +88,7 @@ pub fn codegen(
                     software_tasks::generate_software_task(
                         name,
                         task,
-                        app.pass_modules.get(name),
+                        app.task_modules.get(name),
                         &dispatcher_tasks_name,
                         &dispatcher_request_queue,
                         device,

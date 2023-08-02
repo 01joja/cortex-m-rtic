@@ -98,10 +98,10 @@ pub fn codegen(
     let context_name = r_names::context_name(name);
     let mut has_monotonic = false; 
     // adds modules form previous passes.
-    if let Some(pass_module) = app.pass_modules.get(name){
-        let items = &pass_module.items;
+    if let Some(task_module) = app.task_modules.get(name){
+        let items = &task_module.items;
         module.push(quote!(#(#items)*));
-        if pass_module.has_monotonic{
+        if task_module.has_monotonic{
             has_monotonic = true;
         }
     }
@@ -109,7 +109,7 @@ pub fn codegen(
     // always sets has_context to true.
     quote!(
 
-        #[__rtic_pass_module(has_context = true, has_monotonic = #has_monotonic)]
+        #[__rtic_task_module(has_context = true, has_monotonic = #has_monotonic)]
         pub mod #name{
             pub use super::#context_name as Context;
             #(#module)*

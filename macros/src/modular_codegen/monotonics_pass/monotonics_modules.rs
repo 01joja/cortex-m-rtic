@@ -22,7 +22,7 @@ pub fn codegen(app: &App,  _extra: &Extra) -> (
     
     // Fetching the items from previous passes.
     let mut init_items = vec![];
-    if let Some(module) = app.pass_modules.get(init_name){
+    if let Some(module) = app.task_modules.get(init_name){
         init_items.extend(&module.items);
     }
 
@@ -46,7 +46,7 @@ pub fn codegen(app: &App,  _extra: &Extra) -> (
             #(pub #monotonics_type),*
         );
 
-        #[__rtic_pass_module(has_monotonic = true)]
+        #[__rtic_task_module(has_monotonic = true)]
         pub mod #init_name{
             #(#init_items)*
             pub use super::#internal_monotonics_ident as Monotonics;

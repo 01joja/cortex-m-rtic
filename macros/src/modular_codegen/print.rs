@@ -3,7 +3,7 @@ use rtic_syntax::ast::App;
 use quote::quote;
 use crate::{analyze::Analysis, check::Extra};
 use std::fs;
-use proc_macro2::{TokenStream as TokenStream2};
+use proc_macro2::TokenStream as TokenStream2;
 
 
 /// saves/prints information about app, a̶n̶a̶l̶y̶s̶i̶s̶  and extra
@@ -41,7 +41,7 @@ pub fn abstract_syntax_tree(
 
     write_to_file("contents/app/user_imports_print.rs", format!("{:#?}",app.user_imports));
 
-    write_to_file("contents/app/task_modules_print.rs", format!("{:#?}",app.pass_modules));
+    write_to_file("contents/app/task_modules_print.rs", format!("{:#?}",app.task_modules));
     
     write_to_file("contents/app/main_function.rs", format!("{:#?}",app.main_fn));
 

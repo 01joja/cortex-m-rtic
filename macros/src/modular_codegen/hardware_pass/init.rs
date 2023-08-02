@@ -9,7 +9,7 @@ use crate::modular_codegen::{
     check::Extra,
 };
 
-use super::{module};
+use super::module;
 
 use crate::codegen::util;
 
@@ -89,13 +89,13 @@ pub fn codegen(
     let mut module = vec![];
     let mut has_context = false;
     let mut has_monotonic = false;
-    if let Some(pass_module) = app.pass_modules.get(name){
-        let items = &pass_module.items;
+    if let Some(task_module) = app.task_modules.get(name){
+        let items = &task_module.items;
         for i in items{
             module.push(quote!(#i));
         }
-        has_context = pass_module.has_context;
-        has_monotonic = pass_module.has_monotonic;
+        has_context = task_module.has_context;
+        has_monotonic = task_module.has_monotonic;
         if !has_monotonic{
             module.push(quote!(pub use super::__rtic_internal_Monotonics as Monotonics;));
         }

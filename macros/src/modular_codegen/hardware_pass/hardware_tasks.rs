@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use proc_macro2::{TokenStream as TokenStream2, Span};
 use quote::quote;
-use rtic_syntax::{ast::{App, HardwareTask, PassModule}, Context};
+use rtic_syntax::{ast::{App, HardwareTask, taskModule}, Context};
 
 use syn::{Attribute, Ident, LitInt, PatType};
 
@@ -11,9 +11,7 @@ use crate::modular_codegen::{
     check::Extra,
 };
 
-use super::{
-    module,
-};
+use super::module;
 
 
 /// Generate support code for hardware tasks (`#[exception]`s and `#[interrupt]`s)
@@ -44,7 +42,7 @@ pub fn codegen(
         let mut user_task_context = None;
 
         // If erlier passes has put something in the internal module.
-        if let Some(module) = app.pass_modules.get(name){
+        if let Some(module) = app.task_modules.get(name){
             
             let items = &module.items;
             modules.push(

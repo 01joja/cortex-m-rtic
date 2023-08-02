@@ -85,7 +85,7 @@ pub fn codegen(
 
             // Fetches items from previews passes
             let mut module_items = vec![];
-            if let Some(get_module) = app.pass_modules.get(sw_name){
+            if let Some(get_module) = app.task_modules.get(sw_name){
                 let items = &get_module.items;
                 module_items.push(quote!(#(#items)*));
             }
@@ -109,7 +109,7 @@ pub fn codegen(
             // the module for the software task.
             modules.push(
                 quote!{
-                    #[__rtic_pass_module(has_monotonic = true)]
+                    #[__rtic_task_module(has_monotonic = true)]
                     pub mod #sw_name{
                         #(#module_items)*
                         #[allow(non_snake_case)]

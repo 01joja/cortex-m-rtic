@@ -1,6 +1,6 @@
 use proc_macro2::{Span,TokenStream as TokenStream2};
 use quote::quote;
-use rtic_syntax::{ Context, analyze::Priority, ast::{SoftwareTask,PassModule,App}};
+use rtic_syntax::{ Context, analyze::Priority, ast::{SoftwareTask,taskModule,App}};
 
 use std::str::FromStr;
 use std::collections::HashMap;
@@ -25,7 +25,7 @@ use syn::{Ident, LitInt, Path};
 pub fn generate_software_task(
     name: &Ident, 
     task: &SoftwareTask,
-    pass_module: Option<&PassModule>,
+    task_module: Option<&taskModule>,
     dispatcher_tasks_name: &Ident,
     dispatcher_request_queue: &Ident,
     device: &Path,
@@ -107,7 +107,7 @@ pub fn generate_software_task(
     let mut module_items = None;
     let mut function_context = None;
     let mut function_call_context = None;
-    if let Some(module) = pass_module{
+    if let Some(module) = task_module{
         let items = &module.items;
         module_items = Some(
             quote!{

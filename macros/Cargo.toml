@@ -25,7 +25,7 @@ quote = "1"
 syn = "1"
 rtic-syntax = { git = "https://github.com/01joja/hijack-modular-rtic-syntax"}
 
-#rtic-syntax = { path = "../../hijack-syntax" }
+# rtic-syntax = { path = "../../hijack-syntax" }
 # rtic-syntax = "1.0.2"
 
 # [patch.crates-io]
