@@ -158,7 +158,7 @@ pub fn codegen(
                                 let timer_queue = &mut *#timer_queue.get_mut();
                                 if let Some((_task, index)) = timer_queue.cancel_marker(self.marker) {
                                     // Get the message
-                                    let msg = (&*#sw_name::__internal_input_queue
+                                    let msg = (&*#sw_name::__internal_message_list
                                         .get())
                                         .get_unchecked(usize::from(index))
                                         .as_ptr()
@@ -224,7 +224,7 @@ pub fn codegen(
                             if let Some(index) = rtic::export::interrupt::free(|_| 
                                 (&mut *#sw_name::__internal_function_queue.get_mut()).dequeue()
                             ) {
-                                (&mut *#sw_name::__internal_input_queue
+                                (&mut *#sw_name::__internal_message_list
                                     .get_mut())
                                     .get_unchecked_mut(usize::from(index))
                                     .as_mut_ptr()

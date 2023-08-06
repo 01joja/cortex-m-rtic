@@ -45,7 +45,7 @@ pub fn generate_software_task(
 
     // Creates internal names
     let request_queue =  sw_names::task_variable(name,"request_queue");
-    let input_queue =  sw_names::task_variable(name,"input_queue");
+    let message_list =  sw_names::task_variable(name,"message_list");
         
     // Allocates memory for the software functions queues during
     // initialization.
@@ -132,7 +132,7 @@ pub fn generate_software_task(
     // match statement.
     let bind_spawn_to_software_task = quote!{
         #dispatcher_tasks_name::#name =>{
-            let (#(#task_messages_names)*) = (&*#input_queue.get())
+            let (#(#task_messages_names)*) = (&*#message_list.get())
                 .get_unchecked(usize::from(index))
                 .as_ptr()
                 .read();
@@ -205,7 +205,7 @@ pub fn generate_software_task(
             pub use super::#dispatcher_tasks_name as __internal_dispatcher_task_name;
             pub use super::#dispatcher_request_queue as __internal_PRIO_REQUEST_Q;
             pub use super::#request_queue as __internal_function_queue;
-            pub use super::#input_queue as __internal_input_queue;
+            pub use super::#message_list as __internal_message_list;
             pub use super::#spawn_name as spawn;
         }
 
@@ -214,7 +214,7 @@ pub fn generate_software_task(
         #[allow(non_camel_case_types)]
         #[allow(non_upper_case_globals)]
         #[doc(hidden)]
-        pub static #input_queue: rtic::RacyCell<
+        pub static #message_list: rtic::RacyCell<
             [core::mem::MaybeUninit<(#(#task_messages_types)*)>; #capacity_literal],> = rtic::RacyCell::new([
             #(#vec_of_maybe_unit)*
         ]);
@@ -236,7 +236,7 @@ pub fn generate_software_task(
                     = rtic::export::interrupt::free(|_| {
                     (&mut *#request_queue.get_mut()).dequeue()}) 
                     {  
-                        (&mut *#input_queue.get_mut())
+                        (&mut *#message_list.get_mut())
                             .get_unchecked_mut(usize::from(index))
                             .as_mut_ptr()
                             .write(input);

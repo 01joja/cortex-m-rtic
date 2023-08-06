@@ -58,11 +58,12 @@ pub fn codegen(
         // Used to be able to access all tasks with the same dispatcher
         let mut match_spawn_software_task = vec![];
         let mut dispatcher_tasks_access = vec![];
-        let dispatcher_tasks_name = sw_names::dispatcher_variable(&format!("for_priority_{priority}"));
+        let dispatcher_tasks_name = sw_names::sw_tasks_of_priority(&priority);
         
         // Request queue holds the order of requested task. So they
         // can be dispatched in order.
-        let dispatcher_request_queue = sw_names::dispatcher_variable(&format!("request_queue_{priority}"));
+        let dispatcher_request_queue =  
+                sw_names::dispatcher_variable(&format!("request_queue_prio_{priority}"));
 
         let mut contexts = vec![];
 

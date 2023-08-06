@@ -29,6 +29,12 @@ pub fn dispatcher_variable(variable_name: &str) -> Ident{
     )
 }
 
+pub fn sw_tasks_of_priority(priority: &u8) -> Ident{
+    generate_syntax::ident(
+        &format!("__rtic_software_tasks_prio_{priority}"),
+    )
+}
+
 pub fn link_seciton(task_name: &Ident) -> String{
     format!(".uninit.rtic_sw_{task_name}")
 }
