@@ -26,7 +26,7 @@ mod print;
 mod generate_syntax;
 
 // Passes
-mod software_tasks_pass;
+mod software_pass;
 mod hardware_pass;
 mod monotonics_pass;
 mod resources_pass;
@@ -146,7 +146,7 @@ pub fn app(
             "software" => {
                 // println!("generating software tasks");
                 (generated_arguments, generated_code) 
-                    = software_tasks_pass::codegen(&app,&extra);
+                    = software_pass::codegen(&app,&extra);
                 // println!("parsing");
             }
 
