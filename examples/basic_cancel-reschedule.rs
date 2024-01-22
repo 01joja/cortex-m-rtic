@@ -7,19 +7,23 @@
 
 use panic_semihosting as _;
 
-#[rtic::app(device = lm3s6965, dispatchers = [SSI0, GPIOA])]
+#[rtic::app(device = lm3s6965, dispatchers = [SSI0], compiler_passes = [standard])]
 mod app {
     use cortex_m_semihosting::{debug, hprintln};
     use systick_monotonic::*;
 
-    #[monotonic(binds = SysTick)]
+    #[monotonic(binds = SysTick, default = true)]
     type MyMono = Systick<100>; // 100 Hz / 10 ms granularity
 
     #[shared]
-    struct Shared {}
+    struct Shared {
+        do_reschedule: bool
+    }
 
     #[local]
-    struct Local {}
+    struct Local {
+        baz_spawn_handle: baz::SpawnHandle,
+    }
 
     #[init]
     fn init(cx: init::Context) -> (Shared, Local, init::Monotonics) {
@@ -31,26 +35,33 @@ mod app {
         hprintln!("init").ok();
 
         // Schedule `foo` to run 1 second in the future
-        foo::MyMono::spawn_after(1.secs()).unwrap();
+        foo::spawn_after(1.secs()).unwrap();
+        let spawn_handler = baz::spawn_after(1.secs()).unwrap();
+        
+        
 
         (
-            Shared {},
-            Local {},
+            Shared {
+                do_reschedule: false
+            },
+            Local {
+                baz_spawn_handle: spawn_handler,
+            },
             init::Monotonics(mono), // Give the monotonic to RTIC
         )
     }
 
-    #[task(capacity = 3)]
+    #[task(shared = [do_reschedule])]
     fn foo(_: foo::Context) {
         hprintln!("foo").ok();
 
         // Schedule `bar` to run 2 seconds in the future (1 second after foo runs)
-        let spawn_handle = baz::MyMono::spawn_after(2.secs()).unwrap();
-        bar::MyMono::spawn_after(1.secs(), spawn_handle, false).unwrap(); // Change to true
+        let spawn_handle = baz::spawn_after(2.secs()).unwrap();
+        bar::spawn_after(1.secs()).unwrap(); // Change to true
     }
 
-    #[task]
-    fn bar(_: bar::Context, baz_handle: baz::MyMono::SpawnHandle, do_reschedule: bool) {
+    #[task(shared = [ do_reschedule], local = [baz_spawn_handle])]
+    fn bar(_: bar::Context) {
         hprintln!("bar").ok();
 
         if do_reschedule {
@@ -69,10 +80,5 @@ mod app {
     fn baz(_: baz::Context) {
         hprintln!("baz").ok();
         debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator
-    }
-
-    #[task(priority = 3)]
-    fn hej(_: hej::Context) {
-        hprintln!("hej").ok();
     }
 }

@@ -31,7 +31,7 @@ mod app {
     }
 
 
-    #[task(binds = UART1, priority = 1)]
+    #[task(binds = UART0)]
     fn foo(_: foo::Context) {
 
         hprintln!("foo").unwrap();
@@ -39,25 +39,9 @@ mod app {
         debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator
     }
 
-    #[task(binds = UART0, priority = 1)]
+    #[task(binds = UART1, priority = 3)]
     fn bar(_: bar::Context) {
 
         hprintln!("bar").unwrap();
-    }
-
-    #[idle]
-    fn idle(_cx: idle::Context) -> ! {
-
-        debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator
-
-        // error: no `local_to_foo` field in `idle::LocalResources`
-        // _cx.local.local_to_foo += 1;
-
-        // error: no `local_to_bar` field in `idle::LocalResources`
-        // _cx.local.local_to_bar += 1;
-
-        loop {
-            cortex_m::asm::nop();
-        }
     }
 }

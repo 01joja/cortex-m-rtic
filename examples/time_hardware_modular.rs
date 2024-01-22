@@ -7,7 +7,7 @@
 
 use panic_semihosting as _;
 
-#[rtic::app(device = lm3s6965, compiler_passes = [resources])]
+#[rtic::app(device = lm3s6965)]
 mod app {
     use cortex_m_semihosting::{debug, hprintln};
     use lm3s6965::Interrupt;
@@ -44,7 +44,7 @@ mod app {
         }
     }
 
-    #[task(binds = UART0, local = [times: u32 = 1337])]
+    #[task(binds = UART0, local = [times: u32 = 0])]
     fn uart0(cx: uart0::Context) {
         // Safe access to local `static mut` variable
         *cx.local.times += 1;

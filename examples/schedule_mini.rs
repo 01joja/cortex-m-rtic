@@ -31,7 +31,9 @@ mod app {
         hprintln!("init").ok();
 
         // Schedule `foo` to run 1 second in the future
-        foo::spawn_after(1.secs(),2).unwrap();
+        foo::spawn_after(1.secs()).unwrap();
+        foo::spawn_at(monotonics::now() + 2.secs()).unwrap();
+
 
         (
             Shared {},
@@ -40,25 +42,9 @@ mod app {
         )
     }
 
-    #[task]
-    fn foo(_: foo::Context, a:i32) {
+    #[task(capacity = 2)]
+    fn foo(_: foo::Context) {
         hprintln!("foo").ok();
-
-        // Schedule `bar` to run 2 seconds in the future (1 second after foo runs)
-        bar::spawn_after(1.secs()).unwrap();
-    }
-
-    #[task]
-    fn bar(_: bar::Context) {
-        hprintln!("bar").ok();
-
-        // Schedule `baz` to run 1 seconds from now, but with a specific time instant.
-        baz::spawn_at(monotonics::now() + 1.secs()).unwrap();
-    }
-
-    #[task]
-    fn baz(_: baz::Context) {
-        hprintln!("baz").ok();
         debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator
     }
 }

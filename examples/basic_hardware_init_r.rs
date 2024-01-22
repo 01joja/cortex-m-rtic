@@ -24,20 +24,10 @@ mod app {
 
         hprintln!("init").unwrap();
 
-        (Shared {}, Local {}, init::Monotonics())
-    }
-
-    #[idle]
-    fn idle(_: idle::Context) -> ! {
-
-        hprintln!("idle").unwrap();
-
-
+        
         debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator
 
-        loop {
-            cortex_m::asm::nop();
-        }
+        (Shared {}, Local {}, init::Monotonics())
     }
 
 }

@@ -8,7 +8,7 @@
 use panic_semihosting as _;
 
 #[rtic::app(device = lm3s6965, 
-    dispatchers = [UART0,UART1,UART2,SSI0,I2C0,GPIOA,GPIOB,GPIOC], 
+    dispatchers = [GPIOA], 
     compiler_passes = [software,hardware])]
 mod app {
     use cortex_m_semihosting::{debug, hprintln};

@@ -7,7 +7,7 @@
 
 use panic_semihosting as _;
 
-#[rtic::app(device = lm3s6965, dispatchers = [SSI0])]
+#[rtic::app(device = lm3s6965, dispatchers = [SSI0], compiler_passes = [standard])]
 mod app {
     use cortex_m_semihosting::{debug, hprintln};
     use systick_monotonic::*;
@@ -31,7 +31,7 @@ mod app {
         hprintln!("init").ok();
 
         // Schedule `foo` to run 1 second in the future
-        foo::spawn_after(1.secs(),2).unwrap();
+        foo::spawn_after(1.secs(), 1).unwrap();
 
         (
             Shared {},
@@ -43,6 +43,7 @@ mod app {
     #[task]
     fn foo(_: foo::Context, a:i32) {
         hprintln!("foo").ok();
+        debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator
 
         // Schedule `bar` to run 2 seconds in the future (1 second after foo runs)
         bar::spawn_after(1.secs()).unwrap();
@@ -59,6 +60,5 @@ mod app {
     #[task]
     fn baz(_: baz::Context) {
         hprintln!("baz").ok();
-        debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator
     }
 }
