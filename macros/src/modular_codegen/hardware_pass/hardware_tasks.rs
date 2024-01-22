@@ -11,7 +11,6 @@ use crate::modular_codegen::{
     check::Extra,
 };
 
-use super::module;
 
 
 /// Generate support code for hardware tasks (`#[exception]`s and `#[interrupt]`s)

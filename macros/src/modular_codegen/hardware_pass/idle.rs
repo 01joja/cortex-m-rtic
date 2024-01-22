@@ -10,8 +10,6 @@ use crate::modular_codegen::{
 use syn::{Attribute, Ident};
 
 
-use super::module;
-
 /// Generates support code for `#[idle]` functions
 pub fn codegen(
     app: &App,

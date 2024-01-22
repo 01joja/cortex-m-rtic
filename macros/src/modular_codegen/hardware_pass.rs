@@ -14,7 +14,6 @@ mod assertions;
 mod hardware_tasks;
 mod idle;
 mod init;
-mod module;
 mod main_init;
 
 pub fn codegen(

@@ -9,8 +9,6 @@ use crate::modular_codegen::{
     check::Extra,
 };
 
-use super::{module};
-
 use crate::codegen::util;
 
 mod post_init;
