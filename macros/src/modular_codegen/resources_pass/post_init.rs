@@ -6,7 +6,7 @@ use rtic_syntax::ast::{App,TaskLocal};
 
 use crate::{analyze::Analysis, check::Extra};
 
-use super::{r_names};
+use super::r_names;
 
 /// Generates code that catches the return value of init and then
 /// initializes the resources to the value set in init.
