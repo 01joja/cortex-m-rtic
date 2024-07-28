@@ -15,7 +15,6 @@ pub fn codegen_original(
 ) -> Vec<TokenStream2> {
     
     let mut stmts = vec![];
-
     let rt_err = util::rt_err_ident();
 
     // Disable interrupts -- `init` must run with interrupts disabled

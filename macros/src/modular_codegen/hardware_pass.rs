@@ -40,14 +40,15 @@ pub fn codegen(
     let rt_err = util::rt_err_ident();
 
     let assertion_stmts = assertions::codegen(app, analysis, extra);
-    let (mod_app_hardware_tasks, 
-        root_hardware_tasks, 
+    let (interrupts_handlers, 
+        modules_hardware_tasks, 
         user_hardware_tasks) 
         = hardware_tasks::codegen(app, analysis, extra);
     let (module_init, 
         user_init, ) 
         = init::codegen(app, analysis, extra);
-    let (mod_app_idle, 
+    let (
+        // mod_app_idle, 
         module_idle, 
         user_idle, 
         call_idle) 
@@ -77,8 +78,6 @@ pub fn codegen(
             /// Always include the device crate which contains the vector table
             use #device as #rt_err;
 
-            // #monotonics Not needed yet
-
             /// #user_imports
             #(#user_imports)*
 
@@ -88,28 +87,23 @@ pub fn codegen(
             /// #user_init
             #user_init
 
+            /// #module_init
+            #(#module_init)*
+
             /// #user_idle
             #user_idle
             
-            /// #user_hardware_tasks
-            #(#user_hardware_tasks)*
-            
-            /// #root_init
-            #(#module_init)*
-
-            /// #root_idle
+            /// #module_idle
             #module_idle
 
-            /// #root_hardware_tasks
-            #(#root_hardware_tasks)*
+            /// #user_hardware_tasks
+            #(#user_hardware_tasks)*
 
-            /// #mod_app_idle
-            #(#mod_app_idle)*
+            /// #modules_hardware_tasks
+            #(#modules_hardware_tasks)*
 
-            /// #mod_app_hardware_tasks
-            #(#mod_app_hardware_tasks)*
-
-            // #(#modules)*
+            /// #interrupts_handlers
+            #(#interrupts_handlers)*
 
             /// #main
             #(#main)*
