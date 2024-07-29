@@ -67,11 +67,11 @@ mod app {
         if do_reschedule {
             // Reschedule baz 2 seconds from now, instead of the original 1 second
             // from now.
-            baz_handle.reschedule_after(2.secs()).unwrap();
+            baz_spawn_handle.reschedule_after(2.secs()).unwrap();
             // Or baz_handle.reschedule_at(/* time */)
         } else {
             // Or cancel it
-            baz_handle.cancel().unwrap();
+            baz_spawn_handle.cancel().unwrap();
             debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator
         }
     }

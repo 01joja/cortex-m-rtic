@@ -7,6 +7,13 @@
 
 use panic_semihosting as _;
 
+/*
+Label [lis:m_cancel_reschedule]  
+Caption: 
+An application that reschedules and cancels the task baz.
+It also shows how a task handler can be passed between tasks.
+*/
+
 #[rtic::app(device = lm3s6965, dispatchers = [SSI0, GPIOA])]
 mod app {
     use cortex_m_semihosting::{debug, hprintln};
@@ -30,36 +37,44 @@ mod app {
 
         hprintln!("init").ok();
 
-        // Schedule `foo` to run 1 second in the future
+        // Schedule `foo` to run 1 and 5 second in the future
         foo::MyMono::spawn_after(1.secs()).unwrap();
-
+        foo::MyMono::spawn_after(5.secs()).unwrap();
         (
             Shared {},
             Local {},
-            init::Monotonics(mono), // Give the monotonic to RTIC
+            init::Monotonics(mono), // Passes the monotonic to RTIC
         )
     }
 
-    #[task(capacity = 3)]
-    fn foo(_: foo::Context) {
+    #[task(capacity = 2, local = [count: u32 = 0])]
+    fn foo(cx: foo::Context) {
         hprintln!("foo").ok();
 
-        // Schedule `bar` to run 2 seconds in the future (1 second after foo runs)
+        // Schedule baz to run 6 seconds in the future (5 second after bar runs)
         let spawn_handle = baz::MyMono::spawn_after(2.secs()).unwrap();
-        bar::MyMono::spawn_after(1.secs(), spawn_handle, false).unwrap(); // Change to true
+        if *cx.local.count < 1{
+            bar::MyMono::spawn_after(1.secs(), spawn_handle, true).unwrap();
+        } else {
+            bar::MyMono::spawn_after(1.secs(), spawn_handle, false).unwrap();
+        }
+        *cx.local.count +=1;
     }
 
+    // bar either reschedules or cancels baz depending on do_reschedule
     #[task]
     fn bar(_: bar::Context, baz_handle: baz::MyMono::SpawnHandle, do_reschedule: bool) {
         hprintln!("bar").ok();
 
         if do_reschedule {
-            // Reschedule baz 2 seconds from now, instead of the original 1 second
+            // Reschedule baz 2 seconds from now, instead of the original 5 second
             // from now.
+            hprintln!("reschedule").ok();
             baz_handle.reschedule_after(2.secs()).unwrap();
             // Or baz_handle.reschedule_at(/* time */)
         } else {
             // Or cancel it
+            hprintln!("cancel").ok();
             baz_handle.cancel().unwrap();
             debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator
         }
@@ -68,7 +83,6 @@ mod app {
     #[task]
     fn baz(_: baz::Context) {
         hprintln!("baz").ok();
-        debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator
     }
 
 }
