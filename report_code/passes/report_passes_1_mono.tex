@@ -1,18 +1,3 @@
-//! examples/message_passing.rs
-
-#![deny(unsafe_code)]
-#![deny(warnings)]
-#![no_main]
-#![no_std]
-
-use panic_semihosting as _;
-
-/* 
-Label [lis:passes_0]  
-Caption: 
-A RTIC application that generates code for all passes.
-*/
-
 #[rtic::app(device = lm3s6965, dispatchers = [SSI0, GPIOA], 
     compiler_passes = [monotonics,resources,software,hardware])]
 mod app {

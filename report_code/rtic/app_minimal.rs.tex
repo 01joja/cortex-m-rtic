@@ -1,0 +1,21 @@
+#[app(device = lm3s6965, compiler_passes = [monotonics,resources,software,hardware])]
+mod app {
+    use cortex_m_semihosting::{debug, hprintln};
+    use lm3s6965::Interrupt;
+
+    // Shared resources
+    #[shared]
+    struct Shared {}
+
+    // Local resources
+    #[local]
+    struct Local {}
+
+    // init task
+    #[init]
+    fn init(_: init::Context) -> (Shared, Local, init::Monotonics) {
+        hprintln!("Hello world!").unwrap();
+        debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator
+        (Shared {}, Local {}, init::Monotonics())
+    }
+}

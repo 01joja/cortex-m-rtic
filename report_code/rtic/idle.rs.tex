@@ -1,0 +1,25 @@
+#[rtic::app(device = lm3s6965)]
+mod app {
+    use cortex_m_semihosting::{debug, hprintln};
+
+    #[shared]
+    struct Shared {}
+
+    #[local]
+    struct Local {}
+
+    #[init]
+    fn init(_: init::Context) -> (Shared, Local, init::Monotonics) {
+        (Shared {}, Local {}, init::Monotonics())
+    }
+
+    // idle task 
+    #[idle(local = [x: u32 = 0])]
+    fn idle(cx: idle::Context) -> ! {
+        loop {
+            cortex_m::asm::nop();
+            // if the line below is removed the application would run for ever.
+            debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator
+        }
+    }
+}

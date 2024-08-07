@@ -1,0 +1,36 @@
+#[rtic::app(device = lm3s6965, peripherals = true)]
+mod app {
+    use cortex_m_semihosting::{debug, hprintln};
+    use lm3s6965::Interrupt;
+
+    #[shared]
+    struct Shared {}
+
+    #[local]
+    struct Local {}
+
+    #[init()]
+    fn init(_: init::Context) -> (Shared, Local, init::Monotonics) {
+        // Pends the interrupt GPIOA that is bound to foo
+        rtic::pend(Interrupt::GPIOA);
+        // Pends the interrupt GPIOB that is bound to baz
+        rtic::pend(Interrupt::GPIOB);
+        (Shared {}, Local {}, init::Monotonics())
+    }
+
+    // Hardware task bound to the interrupt GPIOA and with a priority of 1.
+    // When priority is omitted it defaults to 1.
+    #[task(binds = GPIOA)]
+    fn foo(_: foo::Context){
+        hprintln!("foo").ok();
+        rtic::pend(Interrupt::GPIOB); // baz will interrupt foo
+        hprintln!("foo").ok();
+        debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator
+    }
+
+    // Hardware task bound to the interrupt GPIOB and with a priority of 2
+    #[task(binds = GPIOB, priority = 2)]
+    fn baz(_: baz::Context){
+        hprintln!("baz").ok();
+    }
+}

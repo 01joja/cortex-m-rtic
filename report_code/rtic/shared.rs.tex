@@ -1,18 +1,3 @@
-//! examples/lock.rs
-
-#![deny(unsafe_code)]
-#![deny(warnings)]
-#![no_main]
-#![no_std]
-
-use panic_semihosting as _;
-
-/* 
-Label [lis:shared]  
-Caption: 
-The RTIC application shows how a shared resource is used and how the critical sections impacts the tasks.
-It prints "A", "B - shared = 1", "C", "D - shared = 2", "E". 
-*/
 #[rtic::app(device = lm3s6965, dispatchers = [GPIOA, GPIOB, GPIOC])]
 mod app {
     use cortex_m_semihosting::{debug, hprintln};
