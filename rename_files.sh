@@ -1,25 +1,23 @@
 
-echo $1
-echo $2
+echo "copy from "$1/$2\*
+echo "move to "$3/$4/
 
 #v1=examples_report_passes_usage/*
 #v2=report_code/passes
 
-v1=$1
-v2=$2
-
-cp $v1* $v2
-
-cd $v2
+origin=$(echo $1/$2*)
+prefix=$2
+path=$(echo $3/$4/)
+cp $origin* $path
+cd $path
 
 
 for file in *.rs; do
     # get line where rtic starts
-    echo $file
     start=$(grep -n rtic::app $file | cut -f1 -d:)
-    echo $start
     tail +$start $file > "$file.tmp"
-    cp "$file.tmp" "${file%.rs}.tex"
+    output=${file#"$prefix"}
+    cp "$file.tmp" "${output%.rs}.tex"
     rm "$file.tmp"
     rm "$file"
 done

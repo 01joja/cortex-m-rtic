@@ -6,7 +6,7 @@
 use panic_semihosting as _; // panic handler
 use rtic::app;
 
-#[app(device = lm3s6965)]
+#[rtic::app(device = lm3s6965)]
 mod app {
     use cortex_m_semihosting::{debug, hprintln};
     use lm3s6965::Interrupt;

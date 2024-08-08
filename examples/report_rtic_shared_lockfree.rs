@@ -36,8 +36,7 @@ mod app {
 
     #[task(shared = [counter])] // <- same priority
     fn foo(c: foo::Context) {
-        bar::spawn().unwrap();
-
+        bar::spawn().unwrap();  // <- bar will execute after foo
         *c.shared.counter += 1; // <- no lock API required
         let counter = *c.shared.counter;
         hprintln!("  foo = {}", counter).unwrap();
@@ -46,11 +45,9 @@ mod app {
     #[task(shared = [counter])] // <- same priority
     fn bar(c: bar::Context) {
         foo::spawn().unwrap();
-
         *c.shared.counter += 1; // <- no lock API required
         let counter = *c.shared.counter;
         hprintln!("  bar = {}", counter).unwrap();
-
         debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator
     }
 }

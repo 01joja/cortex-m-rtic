@@ -15,7 +15,7 @@ The idle task should not return and there for the application would never termin
 */
 #[rtic::app(device = lm3s6965)]
 mod app {
-    use cortex_m_semihosting::{debug, hprintln};
+    use cortex_m_semihosting::debug;
 
     #[shared]
     struct Shared {}

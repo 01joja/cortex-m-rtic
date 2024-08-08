@@ -1,4 +1,4 @@
-#[app(device = lm3s6965, compiler_passes = [monotonics,resources,software,hardware])]
+#[rtic::app(device = lm3s6965, peripherals = true)]
 mod app {
     use cortex_m_semihosting::{debug, hprintln};
     use lm3s6965::Interrupt;

@@ -15,7 +15,7 @@ use rtic::app;
 // Declare a pool of 128-byte memory blocks
 pool!(P: [u8; 128]);
 
-#[app(device = lm3s6965, dispatchers = [SSI0, QEI0])]
+#[rtic::app(device = lm3s6965, dispatchers = [SSI0, QEI0])]
 mod app {
     use crate::{Box, Pool};
     use cortex_m_semihosting::{debug, hprintln};

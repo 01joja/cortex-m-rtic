@@ -26,7 +26,8 @@ mod app {
         local_foo: i32,
     }
 
-    // `#[init]` cannot access locals from the `#[local]` struct as they are initialized here.
+    // `#[init]` cannot access locals from the `#[local]` struct as they are 
+    // initialized here.
     #[init]
     fn init(_: init::Context) -> (Shared, Local, init::Monotonics) {
         foo::spawn().unwrap();
@@ -49,8 +50,7 @@ mod app {
     fn foo(cx: foo::Context) {
         let local_foo = cx.local.local_foo;
         *local_foo += 1;
-
-        hprintln!("foo: local_foo = {}", local_foo).unwrap();
+        hprintln!("foo local_foo {}", local_foo).unwrap();
     }
 
     // late local, `local_bar`, that can only be accessed from this context
@@ -58,8 +58,7 @@ mod app {
     fn bar(cx: bar::Context) {
         let local_bar = cx.local.local_bar;
         *local_bar += 1;
-
-        hprintln!("bar: local_bar = {}", local_bar).unwrap();
+        hprintln!("bar local_bar {}", local_bar).unwrap();
         if *local_bar > 1{
             debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator
         }

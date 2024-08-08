@@ -6,7 +6,7 @@
 use panic_semihosting as _;
 use rtic::app;
 
-#[app(device = lm3s6965, dispatchers = [SSI0, QEI0])]
+#[rtic::app(device = lm3s6965, dispatchers = [SSI0, QEI0])]
 mod app {
     use cortex_m_semihosting::{debug, hprintln};
 
