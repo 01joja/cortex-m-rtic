@@ -4,40 +4,91 @@
 
 code=examples/report_test*
 outputFolder=outputTemp
-output=$outputFolder/output.txt
-outputModular=$outputFolder/outputModular.txt
 #v2=report_code/passes
 
-echo $outputFolder
-echo $output
-echo $outputModular
-
-
+rm $outputFolder -r
 mkdir $outputFolder
-touch $output
-touch $outputModular
 
-rmdir $outputFolder -r
-# mkdir $outputFolder
-
-exit 1
 
 for file in $code; do
     # get line where rtic starts
     
-    # echo $file
+    if [[ "$file" == *'M'* ]]; then
+        continue
+    fi
+
     file=${file#"examples/"}
     file=${file%".rs"}
-    echo $file
+    fileM=$file"M"
 
-    cargo run --quiet --example $file 
+    output=$outputFolder/$file.txt
+    outputM=$outputFolder/$fileM.txt
     
-    # start=$(grep -n rtic::app $file | cut -f1 -d:)
-    # tail +$start $file > "$file.tmp"
-    # output=${file#"$prefix"}
-    # cp "$file.tmp" "${output%.rs}.tex"
-    # rm "$file.tmp"
-    # rm "$file"
+
+    echo compiling and running $file
+    cargo run --example $file &> $output
+    
+    echo compiling and running $fileM
+    cargo run --example $fileM &> $outputM
+    
 done
 
-rmdir $outputFolder -f
+echo 
+cd $outputFolder
+
+for file in *; do
+
+
+    if [[ "$file" == *'M'* ]]; then
+        continue
+    fi
+
+    file=${file#"examples/"}
+    fileM=${file%".txt"}
+    fileM=$fileM"M.txt"
+
+    # echo $file
+    # echo $fileM
+
+    
+    error=$(grep error $file)
+    errorM=$(grep error $fileM)
+
+    if [[ "$error" == *'error'* ]]; then
+        echo
+        echo failed to run ${file%".txt"}
+        #lazy
+        if [[ "$errorM" == *'error'* ]]; then
+            echo failed to run ${fileM%".txt"}
+        fi
+        continue
+    fi
+
+    if [[ "$errorM" == *'error'* ]]; then
+    
+        echo
+        echo failed to run ${fileM%".txt"}
+        continue
+    fi
+    
+
+    start=$(grep -n Running $file | cut -f1 -d:)
+    start=$(echo "$(($start + 1))")
+    info=$(tail +$start $file)
+
+    start=$(grep -n Running $fileM | cut -f1 -d:)
+    start=$(echo "$(($start + 1))")
+    infoM=$(tail +$start $fileM)
+
+    if [[ "$info" == "$infoM" ]]; then
+        continue
+    fi
+
+    echo
+    echo app:
+    echo ${file%".txt"}
+    echo and app:
+    echo ${fileM%".txt"}
+    echo did not have the same output
+
+done

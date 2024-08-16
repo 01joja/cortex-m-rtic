@@ -115,10 +115,6 @@ pub mod app {
             &mut self,
             f: impl FnOnce(&mut u32) -> RTIC_INTERNAL_R,
         ) -> RTIC_INTERNAL_R {
-            ::cortex_m_semihosting::export::hstdout_fmt(
-                    format_args!("hej!\n"),
-                )
-                .unwrap();
             /// Priority ceiling
             const CEILING: u8 = 2u8;
             unsafe {

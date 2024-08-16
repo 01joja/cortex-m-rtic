@@ -31,7 +31,7 @@ mod app {
         hprintln!("init").ok();
 
         // Schedule `foo` to run 1 second in the future
-        foo::spawn_after(1.secs(), 1).unwrap();
+        foo::spawn_after(1.secs()).unwrap();
 
         (
             Shared {},
@@ -41,7 +41,7 @@ mod app {
     }
 
     #[task()]
-    fn foo(_: foo::Context, a:i32) {
+    fn foo(_: foo::Context) {
         hprintln!("foo").ok();
         debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator
 

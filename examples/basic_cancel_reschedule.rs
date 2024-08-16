@@ -37,8 +37,6 @@ mod app {
         // Schedule `foo` to run 1 second in the future
         foo::spawn_after(1.secs()).unwrap();
         let spawn_handler = baz::spawn_after(1.secs()).unwrap();
-        
-        
 
         (
             Shared {

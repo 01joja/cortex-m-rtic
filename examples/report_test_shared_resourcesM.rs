@@ -7,7 +7,7 @@
 
 use panic_semihosting as _;
 
-#[rtic::app(device = lm3s6965, dispatchers = [GPIOA, GPIOB, GPIOC], compiler_passes = [resources,software,hardware])]
+#[rtic::app(device = lm3s6965, dispatchers = [GPIOA, GPIOB, GPIOC], compiler_passes = [standard])]
 mod app {
     use cortex_m_semihosting::{debug, hprintln};
 
@@ -20,7 +20,7 @@ mod app {
     struct Local {}
 
     #[init]
-    fn init(_: init::Context) -> (Shared, Local, init::Monotonics) {
+    fn init(_: init::Context) -> (Shared, Local, init::Monotonics) { 
         foo::spawn().unwrap();
 
         (Shared { shared: 0 }, Local {}, init::Monotonics())

@@ -53,6 +53,9 @@ members = [
   "xtask",
 ]
 
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(have_basepri)'] }
+
 # do not optimize proc-macro deps or build scripts
 [profile.dev.build-override]
 codegen-units = 16

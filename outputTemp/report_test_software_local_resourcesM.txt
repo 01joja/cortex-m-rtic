@@ -1,0 +1,10 @@
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.08s
+     Running `qemu-system-arm -cpu cortex-m3 -machine lm3s6965evb -nographic -semihosting-config enable=on,target=native -kernel target/thumbv7m-none-eabi/debug/examples/report_test_software_local_resourcesM`
+foo: local_to_foo = 301
+bar: local_to_bar = 201
+foo: local_to_foo = 302
+B - resource = 1
+foo: local_to_foo = 303
+bar: local_to_bar = 202
+foo: local_to_foo = 304
+idle: local_to_idle = 101
