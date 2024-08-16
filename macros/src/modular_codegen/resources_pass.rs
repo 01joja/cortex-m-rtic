@@ -185,7 +185,7 @@ pub fn codegen(
     }
     let mod_app_local = local_resources::codegen(app);
     let (mod_app_shared, resources_module) = shared_resources::codegen(app, analysis, extra);
-    structs.push(quote!(#(#mod_app_local)* #(#mod_app_shared)* #resources_module));
+    structs.push(quote!{#(#mod_app_local)* #(#mod_app_shared)* #resources_module});
 
     let mut passes_pre_init = &vec![];
     let mut passes_post_init = &vec![];
@@ -196,8 +196,12 @@ pub fn codegen(
 
     let code = quote!{
         mod #name{
+            
+            /// contexts
 
             #(#contexts)*
+
+            /// structs
 
             #(#structs)*
 

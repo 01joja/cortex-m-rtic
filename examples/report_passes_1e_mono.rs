@@ -78,6 +78,7 @@ mod app {
             pub use super::super::__rtic_monotonic_MyMono_foo_spawn_handler as SpawnHandle;
         }
     }
+    
     #[__rtic_task_module(has_monotonic = true)]
     pub mod bar {
         pub use MyMono::spawn_after;

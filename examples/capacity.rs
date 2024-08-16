@@ -40,7 +40,7 @@ mod app {
         hprintln!("foo({})", x).unwrap();
     }
 
-    #[task]
+    #[task()]
     fn bar(_: bar::Context) {
         hprintln!("bar").unwrap();
 

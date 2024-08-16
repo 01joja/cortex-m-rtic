@@ -13,20 +13,14 @@ Caption:
 A RTIC application that generates code for all passes.
 */
 
-#[rtic::app(device = lm3s6965, dispatchers = [SSI0, GPIOA], 
-    compiler_passes = [monotonics,resources,software,hardware])]
+#[rtic::app(device = lm3s6965, dispatchers = [SSI0, GPIOA], compiler_passes = [resources, software, hardware])]
 mod app {
-    use cortex_m_semihosting::{debug, hprintln};
-    use systick_monotonic::*;
-
-    #[monotonic(binds = SysTick, default = true)]
-    type MyMono = Systick<100>; // 100 Hz / 10 ms granularity
-
     #[shared]
     struct Shared {
         shared_r: i16,
         #[lock_free]
         shared_lock_free: u8,
+        only_shared: u8,
     }
 
     #[local]
@@ -36,39 +30,70 @@ mod app {
 
     #[init]
     fn init(cx: init::Context) -> (Shared, Local, init::Monotonics) {
-        let systick = cx.core.SYST;
-        // Initialize the monotonic (SysTick rate in QEMU is 12 MHz)
-        let mono = Systick::new(systick, 12_000_000);
+        //user code
         (
-            Shared {
-                shared_r: 0,
-                shared_lock_free: 0,
-            }, 
-            Local {
-                local_r: 0,
-            }, 
+            Shared { shared_r: 0, shared_lock_free: 0 }, 
+            Local { local_r: 0 }, 
             init::Monotonics(mono)
         )
     }
 
-    #[task(capacity=1, priority=2, shared=[shared_r], local=[local_r])]
+    #[__rtic_task_module(has_monotonic = true)] // *New*
+    pub mod init {
+        pub use super::__rtic_monotonic_monotonic_struct as Monotonics;
+    }
+
+    #[task(capacity=1, priority=2, shared=[shared_r, &only_shared], local=[local_r])]
     fn foo(_: foo::Context) {
+    }
+    
+    #[__rtic_task_module(has_monotonic = true)] // *New*
+    pub mod foo {
+        pub use MyMono::spawn_after;
+        pub use MyMono::spawn_at;
+        pub use MyMono::SpawnHandle;
+        pub mod MyMono {
+            pub use super::super::__rtic_monotonic_MyMono_foo_spawn_after as spawn_after;
+            pub use super::super::__rtic_monotonic_MyMono_foo_spawn_at as spawn_at;
+            pub use super::super::__rtic_monotonic_MyMono_foo_spawn_handler as SpawnHandle;
+        }
     }
 
     #[task(capacity=1, priority=1, shared=[shared_r, shared_lock_free])]
     fn bar(_: bar::Context) {
     }
+    
+    #[__rtic_task_module(has_monotonic = true)] // *New*
+    pub mod foo {
+        pub use MyMono::spawn_after;
+        pub use MyMono::spawn_at;
+        pub use MyMono::SpawnHandle;
+        pub mod MyMono {
+            pub use super::super::__rtic_monotonic_MyMono_foo_spawn_after as spawn_after;
+            pub use super::super::__rtic_monotonic_MyMono_foo_spawn_at as spawn_at;
+            pub use super::super::__rtic_monotonic_MyMono_foo_spawn_handler as SpawnHandle;
+        }
+    }
 
-    #[task(binds=UART0, shared=[shared_lock_free], local=[late_local: u16 = 0])]
+    #[task(binds=UART0, shared=[shared_lock_free, &only_shared], local=[late_local: u16 = 0])]
     fn baz(_: baz::Context){
     }
 
     #[idle]
     fn idle(_: idle::Context) -> ! {
         debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator
-
         loop {
             cortex_m::asm::nop();
+        }
+    }
+
+    // Discussed in each pass, the comments represents code
+    #[__rtic_main] // *New*
+    fn __rtic_main() {
+        // Unmasking SysTick and disable interrupt on empty queue
+        #[__post_init]
+        fn post_init() {
+            // Resets the monotonic and stores it in the monotonic storage
         }
     }
 }

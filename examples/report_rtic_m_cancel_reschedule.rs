@@ -62,7 +62,7 @@ mod app {
     }
 
     // bar either reschedules or cancels baz depending on do_reschedule
-    #[task]
+    #[task()]
     fn bar(_: bar::Context, baz_handle: baz::MyMono::SpawnHandle, do_reschedule: bool) {
         hprintln!("bar").ok();
 
@@ -80,7 +80,7 @@ mod app {
         }
     }
 
-    #[task]
+    #[task()]
     fn baz(_: baz::Context) {
         hprintln!("baz").ok();
     }

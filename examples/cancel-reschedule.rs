@@ -49,7 +49,7 @@ mod app {
         bar::MyMono::spawn_after(1.secs(), spawn_handle, false).unwrap(); // Change to true
     }
 
-    #[task]
+    #[task()]
     fn bar(_: bar::Context, baz_handle: baz::MyMono::SpawnHandle, do_reschedule: bool) {
         hprintln!("bar").ok();
 
@@ -65,7 +65,7 @@ mod app {
         }
     }
 
-    #[task]
+    #[task()]
     fn baz(_: baz::Context) {
         hprintln!("baz").ok();
         debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator

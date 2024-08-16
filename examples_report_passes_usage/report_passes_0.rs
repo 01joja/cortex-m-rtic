@@ -14,12 +14,9 @@ A RTIC application that generates code for all passes.
 */
 
 #[rtic::app(device = lm3s6965, dispatchers = [SSI0, GPIOA], 
-    compiler_passes = [monotonics,resources,software,hardware])]
+    compiler_passes = [monotonics, resources, software, hardware])]
 mod app {
-    use cortex_m_semihosting::{debug, hprintln};
-    use systick_monotonic::*;
-
-    #[monotonic(binds = SysTick, default = true)]
+    #[monotonic(binds = SysTick, default = true)] // *Removed in next pass*
     type MyMono = Systick<100>; // 100 Hz / 10 ms granularity
 
     #[shared]
@@ -27,6 +24,7 @@ mod app {
         shared_r: i16,
         #[lock_free]
         shared_lock_free: u8,
+        only_shared: u8,
     }
 
     #[local]
@@ -36,22 +34,15 @@ mod app {
 
     #[init]
     fn init(cx: init::Context) -> (Shared, Local, init::Monotonics) {
-        let systick = cx.core.SYST;
-        // Initialize the monotonic (SysTick rate in QEMU is 12 MHz)
-        let mono = Systick::new(systick, 12_000_000);
+        //user code
         (
-            Shared {
-                shared_r: 0,
-                shared_lock_free: 0,
-            }, 
-            Local {
-                local_r: 0,
-            }, 
+            Shared { shared_r: 0, shared_lock_free: 0, only_shared: 0 }, 
+            Local { local_r: 0 }, 
             init::Monotonics(mono)
         )
     }
 
-    #[task(capacity=1, priority=2, shared=[shared_r], local=[local_r])]
+    #[task(capacity=1, priority=2, shared=[shared_r, &only_shared], local=[local_r])]
     fn foo(_: foo::Context) {
     }
 
@@ -59,14 +50,13 @@ mod app {
     fn bar(_: bar::Context) {
     }
 
-    #[task(binds=UART0, shared=[shared_lock_free], local=[late_local: u16 = 0])]
+    #[task(binds=UART0, shared=[shared_lock_free, &only_shared], local=[late_local: u16 = 0])]
     fn baz(_: baz::Context){
     }
 
     #[idle]
     fn idle(_: idle::Context) -> ! {
         debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator
-
         loop {
             cortex_m::asm::nop();
         }

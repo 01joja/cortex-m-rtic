@@ -11,7 +11,7 @@ use panic_semihosting as _;
 Label [lis:shared_lockfree]  
 Caption: 
 Example of a lock_free shared resource between foo and bar.
-Since foo and bar has the same priority of 1 the resource counter doesn't need to be locked.
+Since foo and bar has the same priority of 1 the resource lock_free doesn't need to be locked.
 */
 
 #[rtic::app(device = lm3s6965, dispatchers = [GPIOA])]
@@ -21,7 +21,8 @@ mod app {
     #[shared]
     struct Shared {
         #[lock_free] // <- lock-free shared resource
-        counter: u64,
+        lock_free: u64,
+        only_share: u64,
     }
 
     #[local]
@@ -31,23 +32,25 @@ mod app {
     fn init(_: init::Context) -> (Shared, Local, init::Monotonics) {
         foo::spawn().unwrap();
 
-        (Shared { counter: 0 }, Local {}, init::Monotonics())
+        (Shared { lock_free: 0, only_share: 3 }, Local {}, init::Monotonics())
     }
 
-    #[task(shared = [counter])] // <- same priority
+    #[task(shared = [lock_free, &only_share])] // <- same priority
     fn foo(c: foo::Context) {
         bar::spawn().unwrap();  // <- bar will execute after foo
-        *c.shared.counter += 1; // <- no lock API required
-        let counter = *c.shared.counter;
-        hprintln!("  foo = {}", counter).unwrap();
+        *c.shared.lock_free += 1; // <- no lock API required
+        let lock_free = *c.shared.lock_free;
+        let only_share = *c.shared.only_share;
+        hprintln!("foo {} {}", lock_free, only_share).unwrap();
     }
 
-    #[task(shared = [counter])] // <- same priority
+    #[task(shared = [lock_free, &only_share])] // <- same priority
     fn bar(c: bar::Context) {
         foo::spawn().unwrap();
-        *c.shared.counter += 1; // <- no lock API required
-        let counter = *c.shared.counter;
-        hprintln!("  bar = {}", counter).unwrap();
+        *c.shared.lock_free += 1; // <- no lock API required
+        let lock_free = *c.shared.lock_free;
+        let only_share = *c.shared.only_share;
+        hprintln!("bar {} {}", lock_free, only_share).unwrap();
         debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator
     }
 }

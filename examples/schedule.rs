@@ -40,7 +40,7 @@ mod app {
         )
     }
 
-    #[task]
+    #[task()]
     fn foo(_: foo::Context, a:i32) {
         hprintln!("foo").ok();
 
@@ -48,7 +48,7 @@ mod app {
         bar::spawn_after(1.secs()).unwrap();
     }
 
-    #[task]
+    #[task()]
     fn bar(_: bar::Context) {
         hprintln!("bar").ok();
 
@@ -56,7 +56,7 @@ mod app {
         baz::spawn_at(monotonics::now() + 1.secs()).unwrap();
     }
 
-    #[task]
+    #[task()]
     fn baz(_: baz::Context) {
         hprintln!("baz").ok();
         debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator

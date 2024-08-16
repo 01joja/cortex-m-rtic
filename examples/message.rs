@@ -32,14 +32,14 @@ mod app {
         *cx.local.count += 1;
     }
 
-    #[task]
+    #[task()]
     fn bar(_: bar::Context, x: u32) {
         hprintln!("bar({})", x).unwrap();
 
         baz::spawn(x + 1, x + 2).unwrap();
     }
 
-    #[task]
+    #[task()]
     fn baz(_: baz::Context, x: u32, y: u32) {
         hprintln!("baz({}, {})", x, y).unwrap();
 

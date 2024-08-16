@@ -23,7 +23,7 @@ pub fn codegen(
     Vec<TokenStream2>,
     // modules -- modules
     Vec<TokenStream2>,
-    // user_tasks -- the `#[task]` functions written by the user
+    // user_tasks -- the `#[task()]` functions written by the user
     Vec<TokenStream2>,
 ) {
 

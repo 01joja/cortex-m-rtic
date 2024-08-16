@@ -19,7 +19,6 @@ pub struct __rtic_internal_fooLocalResources<'a> {
 }
 
 pub struct __rtic_internal_foo_Context<'a> {
-    /// Local Resources this task has access to
     pub local: foo::LocalResources<'a>,
 }
 impl<'a> __rtic_internal_foo_Context<'a> {

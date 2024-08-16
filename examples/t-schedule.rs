@@ -125,12 +125,12 @@ mod app {
         }
     }
 
-    #[task]
+    #[task()]
     fn foo(_: foo::Context) {}
 
-    #[task]
+    #[task()]
     fn bar(_: bar::Context, _x: u32) {}
 
-    #[task]
+    #[task()]
     fn baz(_: baz::Context, _x: u32, _y: u32) {}
 }

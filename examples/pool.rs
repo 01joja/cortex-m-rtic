@@ -54,7 +54,7 @@ mod app {
             .unwrap();
     }
 
-    #[task]
+    #[task()]
     fn foo(_: foo::Context, x: Box<P>) {
         hprintln!("foo({:?})", x.as_ptr()).unwrap();
 

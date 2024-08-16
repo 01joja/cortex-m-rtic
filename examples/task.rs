@@ -24,7 +24,7 @@ mod app {
         (Shared {}, Local {}, init::Monotonics())
     }
 
-    #[task]
+    #[task()]
     fn foo(_: foo::Context) {
         hprintln!("foo - start").unwrap();
 
@@ -42,7 +42,7 @@ mod app {
         hprintln!("foo - end").unwrap();
     }
 
-    #[task]
+    #[task()]
     fn bar(_: bar::Context) {
         hprintln!("bar").unwrap();
 

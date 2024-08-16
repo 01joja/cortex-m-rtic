@@ -13,6 +13,6 @@ mod app {
         (Shared {}, Local {}, init::Monotonics())
     }
 
-    #[task]
+    #[task()]
     fn a(_: a::Context) {}
 }

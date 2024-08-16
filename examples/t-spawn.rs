@@ -53,16 +53,16 @@ mod app {
         let _: Result<(), (u32, u32)> = baz::spawn(0, 1);
     }
 
-    #[task]
+    #[task()]
     fn foo(_: foo::Context) {
         let _: Result<(), ()> = foo::spawn();
         let _: Result<(), u32> = bar::spawn(0);
         let _: Result<(), (u32, u32)> = baz::spawn(0, 1);
     }
 
-    #[task]
+    #[task()]
     fn bar(_: bar::Context, _x: u32) {}
 
-    #[task]
+    #[task()]
     fn baz(_: baz::Context, _x: u32, _y: u32) {}
 }

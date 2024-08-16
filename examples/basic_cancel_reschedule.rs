@@ -76,7 +76,7 @@ mod app {
         }
     }
 
-    #[task]
+    #[task()]
     fn baz(_: baz::Context) {
         hprintln!("baz").ok();
         debug::exit(debug::EXIT_SUCCESS); // Exit QEMU simulator

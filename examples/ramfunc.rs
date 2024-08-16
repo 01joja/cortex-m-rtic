@@ -31,7 +31,7 @@ mod app {
     }
 
     #[inline(never)]
-    #[task]
+    #[task()]
     fn foo(_: foo::Context) {
         hprintln!("foo").unwrap();
 

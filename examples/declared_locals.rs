@@ -37,7 +37,7 @@ mod app {
 
     #[task(local = [a: u32 = 0])]
     fn foo(cx: foo::Context) {
-        // Locals in `#[task]`s have a local lifetime
+        // Locals in `#[task()]`s have a local lifetime
         let _a: &mut u32 = cx.local.a;
 
         // error: explicit lifetime required in the type of `cx`
