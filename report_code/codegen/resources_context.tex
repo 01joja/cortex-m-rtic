@@ -23,7 +23,7 @@ impl<'a> __rtic_internal_foo_Context<'a> {
     }
 }
 
-// Local resources struct
+// Local resources
 pub struct __rtic_internal_fooLocalResources<'a> {
     pub r_local: &'a mut i32,
     pub r_late_local: &'a mut i32,
@@ -41,7 +41,7 @@ impl<'a> __rtic_internal_fooLocalResources<'a> {
     }
 }
 
-/// Shared resources `foo` has access to
+///Shared resources `foo` has access to
 pub struct __rtic_internal_fooSharedResources<'a> {
     pub r_shared: shared_resources::r_shared_that_needs_to_be_locked<'a>,
     pub r_lock_free: &'a mut i32,
