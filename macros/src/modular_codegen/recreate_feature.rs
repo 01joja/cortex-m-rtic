@@ -5,7 +5,7 @@ use quote::quote;
 use rtic_syntax::ast::{App, SharedResources, LocalResources, taskModule, TaskLocal};
 
 use crate::check::Extra;
-use super::tokens;
+use super::generate_syntax;
 
 /// recreates the argument created from the macro:
 /// 
@@ -51,7 +51,7 @@ pub fn hardware_tasks(app: &App, skip_resources: bool) -> (
 
         // Transforms suffix literal to unsuffixed literal
         // and can there for be put as a priority value 
-        let priority = tokens::literal_int(format!("{}",&task.args.priority));
+        let priority = generate_syntax::literal_int(format!("{}",&task.args.priority));
 
         let resources = if skip_resources {
             vec![quote!()]
@@ -111,7 +111,7 @@ pub fn software_tasks(app: &App, skip_resources: bool) -> (
 
         // Transforms suffix literal to unsuffixed literal
         // and can there for be put as a priority value 
-        let priority = tokens::literal_int(format!("{}",&task.args.priority));
+        let priority = generate_syntax::literal_int(format!("{}",&task.args.priority));
         
         let resources = if skip_resources {
             vec![quote!()]
