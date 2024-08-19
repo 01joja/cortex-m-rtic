@@ -1,0 +1,21 @@
+modular_rtic------------------------\
+|-- generate_syntax.rs              |-- recreate_feature.rs
+|-- hardware_pass                   |-- resources_pass
+|   |-- assertions.rs               |   |-- assertion.rs
+|   |-- hardware_tasks.rs           |   |-- context.rs
+|   |-- idle.rs                     |   |-- local_resources.rs
+|   |-- init.rs                     |   |-- local_resources_struct.rs
+|   |-- main_init                   |   |-- post_init.rs
+|   |   |-- post_init.rs            |   |-- r_names.rs
+|   |   \-- pre_init.rs             |   |-- shared_resources.rs
+|   |-- main_init.rs                |   \-- shared_resources_struct.rs
+|   \-- module.rs                   |-- resources_pass.rs
+|-- hardware_pass.rs                |-- software_pass
+|-- monotonics_pass                 |   |-- dispatchers.rs
+|   |-- init.rs                     |   \-- software_tasks.rs
+|   |-- m_names.rs                  |-- software_pass.rs
+|   |-- monotonics_modules.rs       \-- tokens.rs
+|   |-- spawn_handler.rs
+|   \-- timer_queue.rs
+\-- monotonics_pass.rs
+modular_rtic.rs

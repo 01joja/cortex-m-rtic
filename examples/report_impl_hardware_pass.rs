@@ -47,6 +47,5 @@ mod app {
         fn __post_init() {
             let _example_post_init = "example post init";
         }
-        let _example_pre_init2 = "example pre init 2";
     }
 }
