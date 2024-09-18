@@ -54,7 +54,7 @@ mod app {
         hprintln!("foo").ok();
 
         // Schedule `bar` to run 2 seconds in the future (1 second after foo runs)
-        let spawn_handle = baz::spawn_after(2.secs()).unwrap();
+        let _spawn_handle = baz::spawn_after(2.secs()).unwrap();
         bar::spawn_after(1.secs()).unwrap(); // Change to true
     }
 
