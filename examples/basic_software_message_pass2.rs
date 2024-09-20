@@ -1,4 +1,4 @@
-//! examples/message_passing.rs
+//! examples/basic_software_message_passing2.rs
 
 #![deny(unsafe_code)]
 #![deny(warnings)]
