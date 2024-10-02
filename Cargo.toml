@@ -26,6 +26,7 @@ rtic-monotonic = "1.0.0"
 rtic-core = "1.0.0"
 heapless = "0.7.7"
 bare-metal = "1.0.0"
+external_rtic_pass = {git = "https://github.com/01joja/external_rtic_pass"}
 
 
 [build-dependencies]

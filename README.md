@@ -10,6 +10,17 @@ Formerly known as Real-Time For the Masses.
 [![matrix](https://img.shields.io/matrix/rtic:matrix.org)](https://matrix.to/#/#rtic:matrix.org)
 [![Meeting notes](https://hackmd.io/badge.svg)](https://hackmd.io/@xmis9JvZT8Gvo9lOEKyZ4Q/SkBJKsjuH)
 
+## Modular proof of concept implementation
+
+This is the modular proof of concept implementation of RTIC.
+There are examples in the folder "examples" and the file names means the following:
+- non_modular_*
+  - The original non modular examples.
+- modular_*
+  - Examples that uses the modular implementation.
+- report_*
+  - Examples used in the master thesis "Modular implementation of RTIC by expanding Rust macros in multi-passes" by Jonas Jacobsson.
+
 ## Features
 
 - **Tasks** as the unit of concurrency [^1]. Tasks can be *event triggered*
