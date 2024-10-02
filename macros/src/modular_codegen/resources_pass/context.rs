@@ -74,8 +74,8 @@ pub fn codegen(
     if init{
         let device = &app.args.device;
 
-        // init needs to have some specific things
-        // to be able to configure everything
+        // init needs to have some special items
+        // to be able to configure everything.
         life_time = Some(quote!('a));
         structure.push(quote!{
             /// Core (Cortex-M) peripherals
@@ -97,7 +97,8 @@ pub fn codegen(
 
     let context_name = r_names::context_name(name);
     let mut has_monotonic = false; 
-    // adds modules form previous passes.
+
+    // Adds modules form previous passes.
     if let Some(task_module) = app.task_modules.get(name){
         let items = &task_module.items;
         module.push(quote!(#(#items)*));
@@ -106,7 +107,7 @@ pub fn codegen(
         }
     }
 
-    // always sets has_context to true.
+    // Always sets has_context to true.
     quote!(
 
         #[__rtic_task_module(has_context = true, has_monotonic = #has_monotonic)]
@@ -115,14 +116,12 @@ pub fn codegen(
             #(#module)*
         }
 
-        // #(#cfgs)*
         #[allow(non_snake_case)]
         #[allow(non_camel_case_types)]
         pub struct #context_name<#life_time> {
             #(#structure)*
         }
 
-        // #(#cfgs)*
         impl<#life_time> #context_name<#life_time> {
             #[inline(always)]
             pub unsafe fn new(#arguments) -> Self {

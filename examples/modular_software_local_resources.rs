@@ -1,4 +1,4 @@
-//! examples/locals.rs
+
 
 #![deny(unsafe_code)]
 #![deny(warnings)]

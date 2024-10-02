@@ -17,18 +17,16 @@ use syn::{Ident, LitInt, Path};
 
 use super::m_names;
 
-/// Generates code for pre init, post init and more. 
+/// Generates code for pre init and post init. 
 pub fn codegen(
     app: &App, 
     extra: &Extra,
 ) -> (
-    // pre_init - 
+    // pre_init 
     Vec<TokenStream2>,
-    // post_init - 
+    // post_init 
     Vec<TokenStream2>,
 ){
-
-    // let mut spawn_handlers = vec![quote!()];
     let mut pre_init = vec![quote!()];
     let mut post_init = vec![];
 
@@ -61,7 +59,7 @@ pub fn codegen(
     return (pre_init,post_init);
 }
 
-/// generates init needed for monotonic.
+/// Generates init needed for monotonic.
 fn codegen_pre_init(monotonic: &Monotonic, nvic_prio_bits: &TokenStream2) 
     -> 
     // pre_init
@@ -70,7 +68,6 @@ fn codegen_pre_init(monotonic: &Monotonic, nvic_prio_bits: &TokenStream2)
     let mut pre_init = vec![];
 
     let name = &monotonic.ident;
-    // let interrupt = m_names::interrupt();
     let binds = &monotonic.args.binds;
     let priority = if let Some(prio) = &monotonic.args.priority{
         quote! { #prio }
@@ -97,7 +94,6 @@ fn codegen_pre_init(monotonic: &Monotonic, nvic_prio_bits: &TokenStream2)
                 rtic::export::logical2hw(#priority, #nvic_prio_bits),
             );
 
-            // Always enable monotonic interrupts if they should never be off
             if !<#mono_type as rtic::Monotonic>::DISABLE_INTERRUPT_ON_EMPTY_QUEUE {
                 core::mem::transmute::<_, rtic::export::SYST>(())
                     .enable_interrupt();
@@ -111,7 +107,6 @@ fn codegen_pre_init(monotonic: &Monotonic, nvic_prio_bits: &TokenStream2)
                 rtic::export::logical2hw(#priority, #nvic_prio_bits),
             );
 
-            // Always enable monotonic interrupts if they should never be off
             if !<#mono_type as rtic::Monotonic>::DISABLE_INTERRUPT_ON_EMPTY_QUEUE {
                 rtic::export::NVIC::unmask(#rt_err::interrupt::#binds);
             }

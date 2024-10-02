@@ -40,7 +40,7 @@ pub fn codegen(
         let mut interrupt_context = None;
         let mut user_task_context = None;
 
-        // If erlier passes has put something in the internal module.
+        // If earlier passes has put something in the internal module.
         if let Some(module) = app.task_modules.get(name){
             
             let items = &module.items;

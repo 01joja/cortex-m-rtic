@@ -1,5 +1,3 @@
-//! examples/hardware.rs
-
 
 
 #![deny(unsafe_code)]

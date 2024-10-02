@@ -29,30 +29,22 @@ pub fn codegen(
     // Needs to add the monotonics to all software tasks.
     let monotonics = &app.monotonics;
     let software_tasks = &app.software_tasks;
-
     let mut spawn_handlers = vec![];
     let mut modules = vec![];
-
     let schedule_tasks_enum = m_names::schedule_tasks();
     let interrupt_enum = m_names::interrupt();
     let timer_q_marker = m_names::timer_queue_marker();
 
     for (monotonic_name, monotonic) in monotonics{
-
-        //do I need this?? internal_m_name???
-        // let internal_m_name = m_names::internal_monotonic_name(monotonic_name);
         let monotonic_storage = m_names::monotonic_storage(monotonic_name);
         let timer_queue = m_names::timer_queue(monotonic_name);
         let bounded_interrupt = &monotonic.args.binds;
         let debug_struct_string = format!("{monotonic_name}::SpawnHandle");
 
         for (sw_name, task) in software_tasks{
-
             let instants = m_names::monotonic_instants(monotonic_name, sw_name);
 
-            // formats message passing variables (code is the same in software task pass.
-            // maybe should put it in some file both can have access to. But don't want
-            // them to be dependent on "outside" code, sorry long rant)
+            // Formats message passing variables 
             let mut task_messages: Vec<TokenStream2> = vec![];
             let mut task_messages_internal: Vec<TokenStream2> = vec![];
             let mut task_messages_names: Vec<TokenStream2> = vec![];
@@ -137,7 +129,6 @@ pub fn codegen(
                     [core::mem::MaybeUninit<<#sys_tic as rtic::Monotonic>::Instant>; #capacity],
                     >  = rtic::RacyCell::new([core::mem::MaybeUninit::uninit()]);
 
-                    // #(#cfgs)*
                     #[allow(non_snake_case)]
                     #[allow(non_camel_case_types)]
                     pub struct #name_spawn_handler {
@@ -151,7 +142,6 @@ pub fn codegen(
                         }
                     }
 
-                    // #(#cfgs)*
                     impl #name_spawn_handler {
                         pub fn cancel(self) -> Result<(#(#task_messages_types)*), ()> {
                             rtic::export::interrupt::free(|_| unsafe {
@@ -196,11 +186,6 @@ pub fn codegen(
                         }
                     }
 
-
-                    /// Spawns the task after a set duration relative to the current time
-                    ///
-                    /// This will use the time `Instant::new(0)` as baseline if called in `#[init]`,
-                    /// so if you use a non-resetable timer use `spawn_at` when in `#[init]`
                     #[allow(non_snake_case)]
                     pub fn #name_spawn_after(
                         duration: <#monotonic_name as rtic::Monotonic>::Duration,
@@ -212,8 +197,6 @@ pub fn codegen(
                         #name_spawn_at(instant + duration, #(#task_messages_names)*)
                     }
 
-                    /// Spawns the task at a fixed time instant.
-                    /// Needs access to the software tasks function and input queue. 
                     #[allow(non_snake_case)]
                     pub fn #name_spawn_at(
                         instant: <#monotonic_name as rtic::Monotonic>::Instant,

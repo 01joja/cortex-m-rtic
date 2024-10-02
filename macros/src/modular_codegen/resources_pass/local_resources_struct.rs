@@ -87,7 +87,6 @@ pub fn codegen(
     if life_time.is_some() {
         *needs_local_life_time = true;
         
-
         // The struct could end up empty due to `cfg`s leading to an error due to `'a` being unused
         if has_cfgs {
             fields.push(quote!(
@@ -100,8 +99,6 @@ pub fn codegen(
     }
 
     let doc = format!("Local resources `{}` has access to", context.ident(app));
-
-    // can be wrong
     let ident = r_names::local_r_struct(task_name);
     let item = quote!(
         #[allow(non_snake_case)]

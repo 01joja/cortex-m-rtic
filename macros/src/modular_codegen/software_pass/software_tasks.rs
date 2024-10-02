@@ -58,7 +58,6 @@ pub fn generate_software_task(
 
     let mut local_resources_struct = vec![];
     let mut local_resources = vec!();
-    // Don't know what and how external works. So just throws it away for now.
     for (local_resource, external) in &task.args.local_resources{
         let r_type;
         match external {
@@ -75,13 +74,10 @@ pub fn generate_software_task(
 
     let mut local_resources_struct = vec![];
     let mut shared_resources = vec![];
-    // Need to look in to access. Is it &mut and &? 
     for (shared_resource, _access) in &task.args.shared_resources{
         shared_resources.push(shared_resource.to_string().clone());
         local_resources_struct.push(quote!(pub shared_resource: ));
     }
-
-
 
     // formats message passing variables 
     let mut task_messages: Vec<TokenStream2> = vec![];
@@ -148,7 +144,6 @@ pub fn generate_software_task(
     // This transforms the software task to a function that the dispatcher
     // can call.
     let software_task_as_function = quote!{
-        /// Software task as a function
         #(#attrs)*
         #(#cfgs)*
         #[allow(non_snake_case)]
@@ -164,17 +159,17 @@ pub fn generate_software_task(
     let spawn_name = sw_names::task_variable(name, "spawn");
     
     let capacity = task.args.capacity as usize;
-    // capacity literal needs to + 1 here
+    // Capacity literal needs to + 1 here
     let capacity_literal = LitInt::new(&(capacity + 1).to_string(), Span::call_site());
 
     // Removed mk_uninit because monotonic is not implemented yet
     #[allow(clippy::redundant_closure)]
     let function_queue_capacity = quote!(rtic::export::SCFQ<#capacity_literal>);
 
-    // sets it to the right value again
+    // Sets capacity to the right value again
     let capacity_literal = LitInt::new(&(capacity).to_string(), Span::call_site());
 
-    // number of messages passes needs to be equal to capacity
+    // Number of messages passes needs to be equal to capacity
     let mut vec_of_maybe_unit = vec![];
     for _ in 0..task.args.capacity{
         vec_of_maybe_unit.push(quote!(core::mem::MaybeUninit::uninit(),))
@@ -185,9 +180,6 @@ pub fn generate_software_task(
 
     // The software overhead needed for the task.
     let task_overhead = quote!{
-
-        /// Queue version of a free-list that keeps track of empty slots in
-        /// the following buffers
         #[allow(non_camel_case_types)]
         #[allow(non_upper_case_globals)]
         #[doc(hidden)]
@@ -195,11 +187,6 @@ pub fn generate_software_task(
             rtic::export::Queue::new(),
         );
 
-        
-
-        /// Binds internal task overhead to the user defined task.
-        /// Also makes it possible for other passes to modify the 
-        /// function_queue and inputs. (Monotonic pass needs them)
         pub mod #name {
             #module_items
             pub use super::#dispatcher_tasks_name as __internal_dispatcher_task_name;
@@ -209,7 +196,6 @@ pub fn generate_software_task(
             pub use super::#spawn_name as spawn;
         }
 
-        /// Queue that holds messages for the message passing
         #[link_section = #link_section]
         #[allow(non_camel_case_types)]
         #[allow(non_upper_case_globals)]
@@ -219,7 +205,6 @@ pub fn generate_software_task(
             #(#vec_of_maybe_unit)*
         ]);
 
-        /// internal task context (only priority for now)
         pub struct #context {}
         impl #context{
             #[inline(always)]
@@ -228,7 +213,6 @@ pub fn generate_software_task(
             }
         }
 
-        /// internal spawn function for task
         pub fn #spawn_name(#(#task_messages_internal)*) -> Result<(),(#(#task_messages_types)*)>{
             let input = (#(#task_messages_names)*);
             unsafe {

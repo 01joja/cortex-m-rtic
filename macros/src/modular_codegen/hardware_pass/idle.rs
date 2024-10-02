@@ -16,9 +16,9 @@ pub fn codegen(
     _analysis: &Analysis,
     _extra: &Extra,
 ) -> (
-    // mod_app_idle -- the `${idle}Resources` constructor
+    // mod_app_idle -- The `${idle}Resources` constructor
     // Vec<TokenStream2>,
-    // module -- idles module
+    // module -- Idles module
     Option<TokenStream2>,
     // user_idle
     Option<TokenStream2>,
@@ -26,7 +26,6 @@ pub fn codegen(
     TokenStream2,
 ) {
     if let Some(idle) = &app.idle {
-        // let mod_app = vec![];
         let mut module_idle = None;
 
         let attrs = &idle.attrs;
@@ -44,7 +43,6 @@ pub fn codegen(
             let item = &module.items;
 
             module_idle = Some(quote!{
-                    ///module_idle
                     #[allow(non_snake_case)]
                     #[doc = #doc]
                     pub mod #name {
@@ -55,7 +53,6 @@ pub fn codegen(
 
             if module.has_context{
                 context_call_to_idle = Some(quote!{
-                    ///Idle context
                     #name::Context::new(&rtic::export::Priority::new(0))
                 });
                 context_function = Some(quote!{
@@ -66,7 +63,6 @@ pub fn codegen(
         };
         
         let user_idle = Some(quote!(
-            ///Idle function
             #(#attrs)*
             #[allow(non_snake_case)]
             fn #name(#context_function) -> ! {
@@ -78,7 +74,6 @@ pub fn codegen(
         ));
 
         let call_idle = quote!{
-            /// call to idle
             #name(#context_call_to_idle)
         };
 
@@ -86,7 +81,6 @@ pub fn codegen(
         (module_idle, user_idle, call_idle)
     } else {
         (
-            // vec![],
             None,
             None,
             quote!(loop {

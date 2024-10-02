@@ -53,7 +53,8 @@ const STANDARD_PASSES: [&'static str; 4] = [
 /// Example:
 /// #[rtic::app(device = lm3s6965, compiler_passes = ["standard"])]
 /// 
-/// That runs the following passes (as of 19 of december 2022):
+/// That runs the following passes:
+/// rtic::parser -> codegen::monotonics -> rtic::parser -> codegen::resources -> 
 /// rtic::parser -> codegen::software -> rtic::parser -> codegen::hardware -> output
 /// 
 /// Example of self-defined passes:
@@ -69,20 +70,18 @@ pub fn app(
     let mut analysis;
     let mut extra;
 
-    // first parse so we can access the passes
+    // First parse the macro so the order of the passes can be 
+    // accessed
     (app, analysis, extra) = 
         match call_parse(user_argument, user_code){
             Ok(x) => x,
             Err(e) => return e.into(),
         };
-
-    // saves contents of app to contents/app.txt and contents/app/
-    // print::abstract_syntax_tree(&app);
     
-    //extracts the passes.
+    // Extracts the passes.
     let mut passes = app.args.passes.clone();
 
-    // adds a standard passes if standard is given.
+    // Inserts the standard passes if standard is used.
     if passes[0].as_str() == "standard"{
         passes = vec![];
         for pass in STANDARD_PASSES{
@@ -95,8 +94,7 @@ pub fn app(
         };
     }
 
-    // reverses the passes
-    // so that the first pass given gets pop first in the loop.
+    // Reverses the passes to pop the last element first.
     passes.reverse();
 
     let mut generated_arguments = quote!();
@@ -107,9 +105,7 @@ pub fn app(
         let pass = match passes.pop(){
             Some(s) => s,
             None => {        
-                // no more passes and codegen terminates.
-                // let print_generated_code = format!("{:#?}",generated_code);
-                // fs::write("contents/generated_code.rs", print_generated_code).expect("Unable to write file");
+                // No more passes and codegen terminates.
                 return generated_code;
             }
         };
@@ -126,34 +122,26 @@ pub fn app(
         }
 
 
-        // add different passes here:
+        // Add different passes here:
         match pass.as_str() {
             "monotonics" =>{
-                // println!("generating monotonics");
                 (generated_arguments, generated_code) 
                     = monotonics_pass::codegen(&app, &analysis, &extra);
-                // println!("parsing");
             }
             
             "resources" =>{
-                // println!("generating resources");
                 (generated_arguments, generated_code) 
-                = resources_pass::codegen(&app, &analysis, &extra);
-                // println!("parsing");
+                    = resources_pass::codegen(&app, &analysis, &extra);
             }
 
             "software" => {
-                // println!("generating software tasks");
                 (generated_arguments, generated_code) 
                     = software_pass::codegen(&app,&extra);
-                // println!("parsing");
             }
 
             "hardware" => {
-                // println!("generating hardware tasks");
                 (generated_arguments, generated_code)  
                     = hardware_pass::codegen(&app,&analysis,&extra);
-                // println!("finished");
             }
             
             unknown_pass => {
@@ -166,7 +154,7 @@ pub fn app(
     }
 }
 
-/// Makes a call to the parser in rtic-syntax
+/// Makes a call to the parser in rtic-syntax.
 fn call_parse(arguments: TokenStream, code: TokenStream) -> 
     Result<(P<App>, P<Analysis>, Extra),TokenStream> {
 
@@ -195,7 +183,7 @@ fn call_parse(arguments: TokenStream, code: TokenStream) ->
     Ok((app, analysis, extra))
 }
 
-//checks the passes and extracts the strings as &str
+/// Checks the passes and extracts the strings as &str.
 fn check_and_extract_passes(passes: Vec<String>) -> Result<(),TokenStream>{
     let mut last_i = 0;
 

@@ -1,4 +1,4 @@
-//! examples/schedule.rs
+
 
 #![deny(unsafe_code)]
 #![deny(warnings)]

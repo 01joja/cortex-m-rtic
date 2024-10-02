@@ -36,7 +36,7 @@ pub fn codegen(
         let cfgs = &res.cfgs;
         has_cfgs |= !cfgs.is_empty();
 
-        // access hold if the resource is [x] (exclusive) or [&x] (shared)
+        // Access hold if the resource is [x] (exclusive) or [&x] (shared)
         let mut_ = if access.is_exclusive() {
             Some(quote!(mut))
         } else {
@@ -78,7 +78,7 @@ pub fn codegen(
 
             ));
 
-            // continue as the value has been filled,
+            // Continue as the value has been filled,
             continue;
         }
 

@@ -1,4 +1,4 @@
-//! examples/cancel-reschedule.rs
+
 
 #![deny(unsafe_code)]
 #![deny(warnings)]

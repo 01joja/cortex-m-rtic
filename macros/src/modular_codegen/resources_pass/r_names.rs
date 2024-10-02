@@ -6,8 +6,6 @@ use proc_macro2::{Span,TokenStream as TokenStream2};
 
 use syn::Ident;
 
-// use syn::{Ident, LitInt, Path};
-
 //r stands for resource
 
 const RTIC_LOCAL_RESOURCE: &str = "__rtic_local_resource";
@@ -39,7 +37,7 @@ pub fn racycell_external_local_r(resource_name: &Ident) -> Ident{
 
 /// _Declared(Local)_
 /// 
-/// name of RacyCell that holds a local resource only declared in the task
+/// Name of RacyCell that holds a local resource only declared in the task.
 ///  
 /// #[task(local = [#resource_name: u32 = 0])]
 pub fn racycell_declared_local_r(resource_name: &Ident, task_name: &Ident) -> Ident{
@@ -54,7 +52,7 @@ pub fn need_to_lock_r(resource_name: &Ident) -> Ident {
     )
 }
 
-/// name of RacyCell that holds a shared resource declared in #[shared] 
+/// Name of RacyCell that holds a shared resource declared in #[shared].
 pub fn racycell_shared_r(resource_name: &Ident) -> Ident{
     generate_syntax::ident(
         &format!("{RTIC_SHARED_RESOURCE}_{resource_name}")

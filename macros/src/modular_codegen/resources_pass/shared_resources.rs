@@ -28,7 +28,7 @@ pub fn codegen(
 
         let attrs = &res.attrs;
 
-        // late resources in `util::link_section_uninit`
+        // Late resources in `util::link_section_uninit`
         // unless user specifies custom link section
         let section = if attrs.iter().any(|attr| attr.path.is_ident("link_section")) {
             None
@@ -37,12 +37,9 @@ pub fn codegen(
             Some(quote!(#[link_section = #section]))
         };
 
-        // For future use
-        // let doc = format!(" RTIC internal: {}:{}", file!(), line!());
         mod_app.push(quote!(
             #[allow(non_camel_case_types)]
             #[allow(non_upper_case_globals)]
-            // #[doc = #doc]
             #[doc(hidden)]
             #(#attrs)*
             #(#cfgs)*
@@ -50,14 +47,11 @@ pub fn codegen(
             static #mangled_name: rtic::RacyCell<core::mem::MaybeUninit<#ty>> = rtic::RacyCell::new(core::mem::MaybeUninit::uninit());
         ));
 
-        // For future use
-        // let doc = format!(" RTIC internal: {}:{}", file!(), line!());
 
         let shared_name = r_names::need_to_lock_r(name);
 
         if !res.properties.lock_free {
             mod_resources.push(quote!(
-                // #[doc = #doc]
                 #[doc(hidden)]
                 #[allow(non_camel_case_types)]
                 #(#cfgs)*
@@ -90,9 +84,6 @@ pub fn codegen(
                 None => 0,
             };
 
-            // For future use
-            // let doc = format!(" RTIC internal ({} resource): {}:{}", doc, file!(), line!());
-
             mod_app.push(impl_mutex(
                 extra,
                 cfgs,
@@ -110,7 +101,6 @@ pub fn codegen(
     } else {
         quote!(mod shared_resources {
             use rtic::export::Priority;
-
             #(#mod_resources)*
         })
     };
@@ -129,7 +119,7 @@ pub fn codegen(
             Some((&task.args.priority, &task.args.binds))
         } else {
             // If any resource to the exception uses non-lock-free or non-local resources this is
-            // not allwed on thumbv6.
+            // not allowed on thumbv6.
             uses_exceptions_with_resources = uses_exceptions_with_resources
                 || task
                     .args
@@ -241,7 +231,6 @@ fn impl_mutex(
 
             #[inline(always)]
             fn lock<RTIC_INTERNAL_R>(&mut self, f: impl FnOnce(&mut #ty) -> RTIC_INTERNAL_R) -> RTIC_INTERNAL_R {
-                /// Priority ceiling
                 const CEILING: u8 = #ceiling;
 
                 unsafe {

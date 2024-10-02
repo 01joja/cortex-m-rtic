@@ -1,4 +1,4 @@
-//! examples/mutlilock.rs
+
 
 #![deny(unsafe_code)]
 #![deny(warnings)]
@@ -7,7 +7,7 @@
 
 use panic_semihosting as _;
 
-#[rtic::app(device = lm3s6965, dispatchers = [GPIOA] )]
+#[rtic::app(device = lm3s6965, dispatchers = [GPIOA], compiler_passes = [resources,software,hardware])]
 mod app {
     use cortex_m_semihosting::{debug, hprintln};
 

@@ -20,7 +20,6 @@ pub fn codegen(app: &App, analysis: &Analysis, extra: &Extra) -> Vec<TokenStream
         stmts.push(quote!(rtic::export::assert_sync::<#ty>();));
     }
 
-    // I don't really understand what this have to do with the send and sync assertions.
     let device = &extra.device;
     let chunks_name = r_names::priority_mask_chunks_ident();
     let no_basepri_checks: Vec<_> = app

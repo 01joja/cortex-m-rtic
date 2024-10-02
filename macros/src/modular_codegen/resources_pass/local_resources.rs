@@ -1,5 +1,5 @@
 use proc_macro2::{Span, TokenStream as TokenStream2};
-use syn::{Ident};
+use syn::Ident;
 use quote::quote;
 use rtic_syntax::{ast::App, Context};
 
@@ -43,7 +43,6 @@ pub fn codegen(
         mod_app.push(quote!(
             #[allow(non_camel_case_types)]
             #[allow(non_upper_case_globals)]
-            // #[doc = #doc]
             #[doc(hidden)]
             #(#attrs)*
             #(#cfgs)*
@@ -52,8 +51,6 @@ pub fn codegen(
         ));
     }
 
-
-    // Is these the late resources?
 
     // All declared `local = [NAME: TY = EXPR]` local resources
     for (task_name, resource_name, task_local) in app.declared_local_resources() {
@@ -65,12 +62,9 @@ pub fn codegen(
 
         let mangled_name = r_names::racycell_declared_local_r(resource_name, task_name);
 
-        // For future use
-        // let doc = format!(" RTIC internal: {}:{}", file!(), line!());
         mod_app.push(quote!(
             #[allow(non_camel_case_types)]
             #[allow(non_upper_case_globals)]
-            // #[doc = #doc]
             #[doc(hidden)]
             #(#attrs)*
             #(#cfgs)*

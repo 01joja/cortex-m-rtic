@@ -11,7 +11,6 @@ use crate::modular_codegen::{
 
 use crate::codegen::util;
 
-// mod post_init;
 mod pre_init;
 
 
@@ -32,7 +31,6 @@ pub fn codegen(
     let name = &app.init.name;
 
     let pre_init_stmts = pre_init::codegen_original(app, analysis, extra);
-    // let post_init_stmts = post_init::codegen_original(app, analysis);
     let mut pre_init_passes_stmts = &vec![];
     let mut post_init_stmts = &vec![];
 
@@ -41,16 +39,12 @@ pub fn codegen(
         post_init_stmts = &main_fn.post_init;
     }
     
-    
-    // let locals_new = locals_new.iter();
     let call_init = quote! {
         let (shared_resources, local_resources, mut monotonics) = #name(#name::Context::new(core.into()));
     };
 
     quote!{
-        
         #(#pre_init_stmts)*
-        
         #(#pre_init_passes_stmts)*
 
         #[inline(never)]
@@ -58,12 +52,9 @@ pub fn codegen(
             f();
         }
 
-        // Wrap late_init_stmts in a function to ensure that stack space is reclaimed.
         __rtic_init_resources(||{
             #call_init
-
             #(#post_init_stmts)*
-            
             rtic::export::interrupt::enable();
         });
     }

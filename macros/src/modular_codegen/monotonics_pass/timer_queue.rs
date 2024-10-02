@@ -16,7 +16,6 @@ pub fn codegen(app: &App, analysis: &Analysis, _extra: &Extra) -> Vec<TokenStrea
         // Generate the marker counter used to track for `cancel` and `reschedule`
         let tq_marker = m_names::timer_queue_marker();
         items.push(quote!(
-            // #[doc = #doc]
             #[doc(hidden)]
             #[allow(non_camel_case_types)]
             #[allow(non_upper_case_globals)]
@@ -43,7 +42,6 @@ pub fn codegen(app: &App, analysis: &Analysis, _extra: &Extra) -> Vec<TokenStrea
             // For future use
             // let doc = "Tasks that can be scheduled".to_string();
             items.push(quote!(
-                // #[doc = #doc]
                 #[doc(hidden)]
                 #[allow(non_camel_case_types)]
                 #[derive(Clone, Copy)]
@@ -61,10 +59,7 @@ pub fn codegen(app: &App, analysis: &Analysis, _extra: &Extra) -> Vec<TokenStrea
         let m_ident = m_names::monotonic_storage(monotonic_name);
 
         // Static variables and resource proxy
-        {
-            // For future use
-            // let doc = &format!("Timer queue for {}", monotonic_name);
-            
+        {   
             // adds the capacity for all softwaretasks together
             let cap: usize = app
                 .software_tasks
@@ -74,8 +69,6 @@ pub fn codegen(app: &App, analysis: &Analysis, _extra: &Extra) -> Vec<TokenStrea
             let capacity = generate_syntax::capacity_literal(cap);
             let tq_ty = quote!(rtic::export::TimerQueue<#sys_tick, #schedule_task, #capacity>);
 
-            // For future use
-            // let doc = format!(" RTIC internal: {}:{}", file!(), line!());
             items.push(quote!(
                 #[doc(hidden)]
                 #[allow(non_camel_case_types)]
@@ -85,9 +78,7 @@ pub fn codegen(app: &App, analysis: &Analysis, _extra: &Extra) -> Vec<TokenStrea
             ));
 
             let mono = m_names::monotonic_storage(monotonic_name);
-            // For future use
-            // let doc = &format!("Storage for {}", monotonic_name);
-
+            
             items.push(quote!(
                 #[doc(hidden)]
                 #[allow(non_camel_case_types)]
@@ -107,10 +98,6 @@ pub fn codegen(app: &App, analysis: &Analysis, _extra: &Extra) -> Vec<TokenStrea
                 .map(|(name, task)| {
                     let cfgs = &task.cfgs;
                     let priority = task.args.priority;
-                    // let rq = util::rq_ident(priority);
-                    // let rqt = m_names::spawn_t_ident(priority);
-
-                    // The interrupt that runs the task dispatcher
                     let interrupt = &analysis.interrupts.get(&priority).expect("RTIC-ICE: interrupt not found").0;
 
                     let pend = {

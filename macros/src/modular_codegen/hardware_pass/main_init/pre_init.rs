@@ -38,7 +38,7 @@ pub fn codegen_original(
     let device = &extra.device;
     let nvic_prio_bits = quote!(#device::NVIC_PRIO_BITS);
 
-    // check that all dispatchers exists in the `Interrupt` enumeration regardless of whether
+    // Check that all dispatchers exists in the `Interrupt` enumeration regardless of whether
     // they are used or not
     let interrupt = util::interrupt_ident();
     for name in app.args.extern_interrupts.keys() {

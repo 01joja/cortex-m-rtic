@@ -26,7 +26,7 @@ pub fn codegen(app: &App,  _extra: &Extra) -> (
         init_items.extend(&module.items);
     }
 
-    //Generates the struct used to pass systics form init to post_init
+    // Generates the struct used to pass systics form init to post_init
     let monotonics_type: Vec<_> = app
         .monotonics
         .iter()
@@ -39,7 +39,6 @@ pub fn codegen(app: &App,  _extra: &Extra) -> (
     let internal_monotonics_ident = m_names::monotonic_struct();
 
     let init_module = quote!{
-        /// Monotonics used by the system
         #[allow(non_snake_case)]
         #[allow(non_camel_case_types)]
         pub struct #internal_monotonics_ident(
@@ -77,8 +76,6 @@ pub fn codegen(app: &App,  _extra: &Extra) -> (
                 #[doc = #doc]
                 #[allow(non_snake_case)]
                 pub mod #name {
-
-                    /// Read the current time from this monotonic
                     pub fn now() -> <super::super::#name as rtic::Monotonic>::Instant {
                         rtic::export::interrupt::free(|_| {
                             use rtic::Monotonic as _;
@@ -99,8 +96,6 @@ pub fn codegen(app: &App,  _extra: &Extra) -> (
     } else {
         quote!(
             pub use rtic::Monotonic as _;
-
-            /// Holds static methods for each monotonic.
             pub mod monotonics {
                 #(#monotonic_parts)*
             }

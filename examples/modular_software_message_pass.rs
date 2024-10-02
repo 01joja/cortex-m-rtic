@@ -1,4 +1,4 @@
-//! examples/message_passing.rs
+
 
 #![deny(unsafe_code)]
 #![deny(warnings)]

@@ -17,13 +17,13 @@ pub fn codegen(
     analysis: &Analysis,
     extra: &Extra,
 ) -> (
-    // module_init -- items that must be placed in the root of the crate:
-    // - the `${init}Locals` struct
-    // - the `${init}Resources` struct
-    // - the `${init}LateResources` struct
-    // - the `${init}` module, which contains types like `${init}::Context`
+    // module_init -- Items that must be placed in the root of the crate:
+    // - The `${init}Locals` struct
+    // - The `${init}Resources` struct
+    // - The `${init}LateResources` struct
+    // - The `${init}` module, which contains types like `${init}::Context`
     Vec<TokenStream2>,
-    // user_init -- the `#[init]` function written by the user
+    // user_init -- The `#[init]` function written by the user
     TokenStream2,
 ) {
 
@@ -71,8 +71,6 @@ pub fn codegen(
         }
     });
 
-    // let locals_pat = locals_pat.iter();
-
     let user_init_return = quote! {#shared, #local, #name::Monotonics};
 
     let user_init = quote!(
@@ -99,7 +97,7 @@ pub fn codegen(
         }
     }
     
-    // Init has already been generated.
+    // Context of init has already been generated.
     if has_context{
         init_items.push(quote!{
             mod #name{
@@ -124,9 +122,6 @@ pub fn codegen(
                 extra);
         init_items.push(module);
     }
-    
-    
-
 
     (init_items, user_init)
 }
@@ -141,17 +136,13 @@ fn generate_module(
 
     // items - items outside of the module.
     let mut items = vec![];
-    // module_items - don't understand. Think it is functions in called function?.
-    // it will be inside "pub mod #name"
+    // module_items - items inside of init module.
     let mut module_items = vec![];
     // fields - builds the execution context struct.
-    // Need to implement after shared and local resources
     let mut fields: Vec<TokenStream2> = vec![];
     // values - the implementation of execution context.
-    // Need to implement after shared and local resources
     let mut values: Vec<TokenStream2> = vec![];
     // Used to copy task cfgs to the whole module
-    // Don't think this will be needed here. It is only used in software.
     let task_cfgs: Vec<Attribute> = vec![];
 
     let lt;
@@ -159,16 +150,13 @@ fn generate_module(
     let vector: Vec<Attribute> = vec![];
     let cfgs = &vector;
 
-    // Module 001
     fields.push(quote!(
-        /// Core (Cortex-M) peripherals
         pub core: rtic::export::Peripherals
     ));
     if extra.peripherals {
         let device = &extra.device;
 
         fields.push(quote!(
-            /// Device peripherals
             pub device: #device::Peripherals
         ));
 
@@ -176,14 +164,12 @@ fn generate_module(
     }
     lt = Some(quote!('a));
     fields.push(quote!(
-        /// Critical section token for init
         pub cs: rtic::export::CriticalSection<#lt>
     ));
     values.push(quote!(cs: rtic::export::CriticalSection::new()));
     values.push(quote!(core));
 
 
-    // Module 007
     let monotonic_types: Vec<_> = app
         .monotonics
         .iter()
@@ -196,7 +182,6 @@ fn generate_module(
     let internal_monotonics_ident = util::mark_internal_name("Monotonics");
 
     items.push(quote!(
-        /// Monotonics used by the system
         #[allow(non_snake_case)]
         #[allow(non_camel_case_types)]
         pub struct #internal_monotonics_ident(
@@ -208,21 +193,13 @@ fn generate_module(
         pub use super::#internal_monotonics_ident as Monotonics;
     ));
 
-    //Module 009
     let doc = "Initialization function";
-
-    //Module 014
     let core: Option<TokenStream2> = Some(quote!(core: rtic::export::Peripherals,));
-
-    //Module 016
     let priority: Option<TokenStream2> = None;
-
-    //Module 018
     let internal_context_name = util::internal_task_ident(name, "Context");
 
     items.push(quote!(
         #(#cfgs)*
-        /// Execution context
         #[allow(non_snake_case)]
         #[allow(non_camel_case_types)]
         pub struct #internal_context_name<#lt> {
@@ -245,13 +222,11 @@ fn generate_module(
         pub use super::#internal_context_name as Context;
     ));
 
-    //Module 020 and 021
     if items.is_empty() {
         return quote!()
     } else {
         return quote!(
             #(#items)*
-
             #[allow(non_snake_case)]
             #(#task_cfgs)*
             #[doc = #doc]
@@ -261,6 +236,3 @@ fn generate_module(
         )
     }
 }
-
-
-

@@ -1,4 +1,4 @@
-//! examples/hardware.rs
+
 
 #![deny(unsafe_code)]
 #![deny(warnings)]
@@ -7,7 +7,7 @@
 
 use panic_semihosting as _;
 
-#[rtic::app(device = lm3s6965, compiler_passes = [resources])]
+#[rtic::app(device = lm3s6965, compiler_passes = [resources,hardware])]
 mod app {
     use cortex_m_semihosting::{debug, hprintln};
     use lm3s6965::Interrupt;

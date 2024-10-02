@@ -1,4 +1,4 @@
-//! examples/lock.rs
+
 
 #![deny(unsafe_code)]
 #![deny(warnings)]

@@ -134,10 +134,7 @@ pub fn codegen(
                 }
             }
 
-            /// Context needed to pass local and shared resources to their respective task.
             #(#contexts)*
-
-            /// All software tasks belonging to prio X
             #[allow(non_snake_case)]
             #[allow(non_camel_case_types)]
             #[doc(hidden)]
@@ -145,7 +142,6 @@ pub fn codegen(
                 #(#dispatcher_tasks_access)*
             }
 
-            /// Implements rtic clone
             #[automatically_derived]
             #[allow(non_snake_case)]
             #[allow(non_camel_case_types)]
@@ -156,7 +152,6 @@ pub fn codegen(
                 }
             }
             
-            /// Implements rtic copy
             #[automatically_derived]
             #[allow(non_snake_case)]
             #[allow(non_camel_case_types)]
