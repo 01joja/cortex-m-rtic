@@ -51,7 +51,17 @@ pub fn codegen(
 
     // for (priority,tasks) in priority_to_tasks{
     for priority in vec_sorted_prio{
-        let tasks = priority_to_tasks.get(&priority).unwrap();
+        //  = priority_to_tasks.get(&priority).unwrap();
+        let tasks;
+        match priority_to_tasks.get(&priority) {
+            Some(t) => tasks = t,
+            _ => continue,
+        }
+
+        if interrupts.len() == 0{
+            continue
+        }
+
         let interrupt = interrupts.pop().unwrap().0; 
         
         // Named the dispatcher after the interrupt it was assigned. 
