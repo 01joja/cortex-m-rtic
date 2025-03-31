@@ -38,7 +38,7 @@ pub fn codegen(
     TokenStream2){
 
     // hashmap, key: priority, value: vector of tasks.
-    let priority_to_tasks = sort_tasks_after_priority(&app);
+    let (priority_to_tasks,vec_sorted_prio) = sort_tasks_after_priority(&app);
 
     let device = &extra.device;
     let mut software_tasks = vec![];
@@ -49,7 +49,9 @@ pub fn codegen(
     
     let mut init_tasks = vec![];
 
-    for (priority,tasks) in priority_to_tasks{
+    // for (priority,tasks) in priority_to_tasks{
+    for priority in vec_sorted_prio{
+        let tasks = priority_to_tasks.get(&priority).unwrap();
         let interrupt = interrupts.pop().unwrap().0; 
         
         // Named the dispatcher after the interrupt it was assigned. 
@@ -89,7 +91,7 @@ pub fn codegen(
                     software_tasks::generate_software_task(
                         name,
                         task,
-                        app.task_modules.get(name),
+                        app.task_modules.get(*name),
                         &dispatcher_tasks_name,
                         &dispatcher_request_queue,
                         device,
@@ -188,11 +190,14 @@ pub fn codegen(
 
 /// Returns a HashMap where the key is a priority and
 /// value is vector of all software tasks with that priority.
-fn sort_tasks_after_priority(app: &App) -> HashMap<u8, Vec<(&Ident, &SoftwareTask)>>{
+fn sort_tasks_after_priority(app: &App) -> (HashMap<u8, Vec<(&Ident, &SoftwareTask)>>,Vec<u8>){
     let mut priority_to_tasks: HashMap<u8, Vec<(&Ident, &SoftwareTask)>> = HashMap::new();
-    
+    let mut vec_sorted_prio = vec![];
+
     for task in &app.software_tasks{
         let priority = &task.1.args.priority;
+        let i = *priority;
+        vec_sorted_prio.push(i);
         
         match priority_to_tasks.get_mut(priority){
             Some(vec) => {
@@ -208,6 +213,8 @@ fn sort_tasks_after_priority(app: &App) -> HashMap<u8, Vec<(&Ident, &SoftwareTas
         };
     }
 
-    return priority_to_tasks;
+    vec_sorted_prio.sort();
+
+    return (priority_to_tasks,vec_sorted_prio);
 }
 
